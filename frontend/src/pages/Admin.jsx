@@ -10,7 +10,7 @@ import PasswordModal from '../sections/Admin/PasswordModal';
 import { useAuth } from '../contexts/AuthContext';
 
 // API endpoint for user approval
-const API_ENDPOINT = 'https://djo-ride-backend.vercel.app/api/approve-user';
+const API_ENDPOINT = 'https://djo-ride-backend.vercel.app/api/approve-user.js';
 
 
 const Admin = () => {
@@ -281,5 +281,6 @@ const Admin = () => {
         </div>
     );
 };
+
 
 export default Admin;
