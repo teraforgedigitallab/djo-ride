@@ -1,9 +1,9 @@
 import Cors from 'cors';
 
-// Initialize the cors middleware with appropriate settings
+// Initialize the cors middleware
 const cors = Cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  origin: ['http://localhost:5173', 'https://djoride.com', 'https://djo-ride.vercel.app'],
+  origin: true,
   credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204
