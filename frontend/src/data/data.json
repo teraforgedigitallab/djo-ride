@@ -1,0 +1,903 @@
+{
+    "categories": [
+        {
+            "model": "Sedan",
+            "carType": "Dzire/ Amaze or Similar",
+            "image": "/images/car-models/sedan.jpg",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 4,
+            "luggage": 2,
+            "handbag": 2,
+            "features": [
+                "Air Conditioning",
+                "Music System",
+                "Manual/Auto Transmission",
+                "Airbags"
+            ]
+        },
+        {
+            "model": "Sedan +",
+            "carType": "Ciaz/ Honda City or Similar",
+            "image": "/images/car-models/sedan+.jpg",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 4,
+            "luggage": 2,
+            "handbag": 3,
+            "features": [
+                "Premium Music System",
+                "Air Conditioning",
+                "Auto Transmission",
+                "Multiple Airbags",
+                "Cruise Control"
+            ]
+        },
+        {
+            "model": "MUV",
+            "carType": "Ertiga or Similar",
+            "image": "/images/car-models/muv.jpg",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 6,
+            "luggage": 3,
+            "handbag": 3,
+            "features": [
+                "Air Conditioning",
+                "Music System",
+                "Manual Transmission",
+                "Airbags",
+                "Spacious Seating"
+            ]
+        },
+        {
+            "model": "SUV",
+            "carType": "Innova Crysta or Similar",
+            "image": "/images/car-models/suv.jpg",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 6,
+            "luggage": 4,
+            "handbag": 4,
+            "features": [
+                "Premium Air Conditioning",
+                "Touchscreen Infotainment",
+                "Auto Transmission",
+                "Multiple Airbags",
+                "Spacious Cabin"
+            ]
+        },
+        {
+            "model": "Sedan - Luxury",
+            "carType": "Altis",
+            "image": "/images/car-models/sedanluxury.png",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 4,
+            "luggage": 2,
+            "handbag": 3,
+            "features": [
+                "Climate Control",
+                "Premium Sound System",
+                "Auto Transmission",
+                "Leather Seats",
+                "All Airbags"
+            ]
+        },
+        {
+            "model": "SUV +",
+            "carType": "BYD/ Hycross",
+            "image": "/images/car-models/suv+.jpg",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 6,
+            "luggage": 4,
+            "handbag": 4,
+            "features": [
+                "Dual Zone Climate Control",
+                "Premium Infotainment",
+                "Auto Transmission",
+                "Sunroof",
+                "Advanced Safety Features"
+            ]
+        },
+        {
+            "model": "Luxury",
+            "carType": "Camry / Fortuner",
+            "image": "/images/car-models/luxury.jpg",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 6,
+            "luggage": 4,
+            "handbag": 5,
+            "features": [
+                "Multi-zone Climate Control",
+                "Premium Sound System",
+                "Advanced Auto Transmission",
+                "Leather Seats",
+                "All Safety Features"
+            ]
+        },
+        {
+            "model": "Luxury +",
+            "carType": "E - Class",
+            "image": "/images/car-models/luxury+.jpg",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 4,
+            "luggage": 3,
+            "handbag": 3,
+            "features": [
+                "Advanced Climate Control",
+                "Premium Sound System",
+                "Adaptive Transmission",
+                "Premium Leather Seats",
+                "Advanced Driver Assistance"
+            ]
+        }
+    ],
+    "pricing": [
+        {
+            "country": "India",
+            "states": [
+                {
+                    "state": "NCR",
+                    "city": "Delhi",
+                    "pricing": {
+                "Sedan": {
+                    "4hr40km": 13,
+                    "8hr80km": 20,
+                    "airport": 13
+                },
+                "Sedan +": {
+                    "4hr40km": 19,
+                    "8hr80km": 29,
+                    "airport": 19
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 26,
+                    "8hr80km": 43,
+                    "airport": 26
+                },
+                "MUV": {
+                    "4hr40km": 18,
+                    "8hr80km": 25,
+                    "airport": 18
+                },
+                "SUV": {
+                    "4hr40km": 20,
+                    "8hr80km": 30,
+                    "airport": 20
+                },
+                "SUV +": {
+                    "4hr40km": 26,
+                    "8hr80km": 42,
+                    "airport": 26
+                },
+                "Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 73,
+                    "airport": 73
+                },
+                "Luxury +": {
+                    "4hr40km": 0,
+                    "8hr80km": 111,
+                    "airport": 111
+                }
+            }
+        },
+        {
+            "state": "Maharashtra",
+            "city": "Mumbai",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 18,
+                    "8hr80km": 29,
+                    "airport": 18
+                },
+                "Sedan +": {
+                    "4hr40km": 25,
+                    "8hr80km": 37,
+                    "airport": 25
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 39,
+                    "8hr80km": 60,
+                    "airport": 39
+                },
+                "MUV": {
+                    "4hr40km": 25,
+                    "8hr80km": 39,
+                    "airport": 25
+                },
+                "SUV": {
+                    "4hr40km": 29,
+                    "8hr80km": 48,
+                    "airport": 29
+                },
+                "SUV +": {
+                    "4hr40km": 39,
+                    "8hr80km": 54,
+                    "airport": 39
+                },
+                "Luxury": {
+                    "4hr40km": 52,
+                    "8hr80km": 95,
+                    "airport": 52
+                },
+                "Luxury +": {
+                    "4hr40km": 76,
+                    "8hr80km": 137,
+                    "airport": 76
+                }
+            }
+        },
+        {
+            "state": "Maharashtra",
+            "city": "Pune",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 16,
+                    "8hr80km": 25,
+                    "airport": 17
+                },
+                "Sedan +": {
+                    "4hr40km": 21,
+                    "8hr80km": 39,
+                    "airport": 21
+                },
+                "MUV": {
+                    "4hr40km": 21,
+                    "8hr80km": 36,
+                    "airport": 21
+                },
+                "SUV": {
+                    "4hr40km": 26,
+                    "8hr80km": 44,
+                    "airport": 26
+                },
+                "Luxury": {
+                    "4hr40km": 52,
+                    "8hr80km": 95,
+                    "airport": 52
+                },
+                "Luxury +": {
+                    "4hr40km": 76,
+                    "8hr80km": 131,
+                    "airport": 76
+                }
+            }
+        },
+        {
+            "state": "Maharashtra",
+            "city": "Nagpur",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 13,
+                    "8hr80km": 26,
+                    "airport": 17
+                },
+                "MUV": {
+                    "4hr40km": 18,
+                    "8hr80km": 36,
+                    "airport": 18
+                },
+                "SUV": {
+                    "4hr40km": 24,
+                    "8hr80km": 48,
+                    "airport": 24
+                },
+                "Luxury": {
+                    "4hr40km": 50,
+                    "8hr80km": 89,
+                    "airport": 50
+                }
+            }
+        },
+        {
+            "state": "Maharashtra",
+            "city": "Aurangabad",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 14,
+                    "8hr80km": 26,
+                    "airport": 17
+                },
+                "MUV": {
+                    "4hr40km": 19,
+                    "8hr80km": 36,
+                    "airport": 19
+                },
+                "SUV": {
+                    "4hr40km": 26,
+                    "8hr80km": 48,
+                    "airport": 26
+                },
+                "Luxury": {
+                    "4hr40km": 54,
+                    "8hr80km": 89,
+                    "airport": 54
+                }
+            }
+        },
+        {
+            "state": "Gujarat",
+            "city": "Ahmedabad",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 13,
+                    "8hr80km": 26,
+                    "airport": 14
+                },
+                "MUV": {
+                    "4hr40km": 18,
+                    "8hr80km": 36,
+                    "airport": 18
+                },
+                "SUV": {
+                    "4hr40km": 21,
+                    "8hr80km": 48,
+                    "airport": 21
+                },
+                "Luxury": {
+                    "4hr40km": 50,
+                    "8hr80km": 89,
+                    "airport": 50
+                }
+            }
+        },
+        {
+            "state": "Gujarat",
+            "city": "Vadodara",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 13,
+                    "8hr80km": 26,
+                    "airport": 14
+                },
+                "MUV": {
+                    "4hr40km": 18,
+                    "8hr80km": 36,
+                    "airport": 18
+                },
+                "SUV": {
+                    "4hr40km": 21,
+                    "8hr80km": 48,
+                    "airport": 21
+                },
+                "Luxury": {
+                    "4hr40km": 50,
+                    "8hr80km": 89,
+                    "airport": 50
+                }
+            }
+        },
+        {
+            "state": "Gujarat",
+            "city": "Surat",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 14,
+                    "8hr80km": 25,
+                    "airport": 14
+                },
+                "Sedan +": {
+                    "4hr40km": 19,
+                    "8hr80km": 36,
+                    "airport": 19
+                },
+                "MUV": {
+                    "4hr40km": 21,
+                    "8hr80km": 33,
+                    "airport": 20
+                },
+                "SUV": {
+                    "4hr40km": 26,
+                    "8hr80km": 42,
+                    "airport": 26
+                }
+            }
+        },
+        {
+            "state": "Madhya Pradesh",
+            "city": "Indore",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 14,
+                    "8hr80km": 25,
+                    "airport": 14
+                },
+                "Sedan +": {
+                    "4hr40km": 19,
+                    "8hr80km": 36,
+                    "airport": 19
+                },
+                "MUV": {
+                    "4hr40km": 21,
+                    "8hr80km": 33,
+                    "airport": 20
+                },
+                "SUV": {
+                    "4hr40km": 26,
+                    "8hr80km": 42,
+                    "airport": 26
+                }
+            }
+        },
+        {
+            "state": "Madhya Pradesh",
+            "city": "Bhopal",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 14,
+                    "8hr80km": 25,
+                    "airport": 18
+                },
+                "Sedan +": {
+                    "4hr40km": 19,
+                    "8hr80km": 36,
+                    "airport": 19
+                },
+                "MUV": {
+                    "4hr40km": 21,
+                    "8hr80km": 33,
+                    "airport": 20
+                },
+                "SUV": {
+                    "4hr40km": 26,
+                    "8hr80km": 42,
+                    "airport": 26
+                }
+            }
+        },
+        {
+            "state": "Madhya Pradesh",
+            "city": "Ujjain",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 14,
+                    "8hr80km": 25,
+                    "airport": 17
+                },
+                "MUV": {
+                    "4hr40km": 31,
+                    "8hr80km": 31,
+                    "airport": 31
+                },
+                "SUV": {
+                    "4hr40km": 25,
+                    "8hr80km": 36,
+                    "airport": 25
+                },
+                "SUV +": {
+                    "4hr40km": 26,
+                    "8hr80km": 44,
+                    "airport": 26
+                }
+            }
+        },
+        {
+            "state": "Karnataka",
+            "city": "Bengaluru",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 14,
+                    "8hr80km": 24,
+                    "airport": 24
+                },
+                "MUV": {
+                    "4hr40km": 26,
+                    "8hr80km": 36,
+                    "airport": 30
+                },
+                "SUV": {
+                    "4hr40km": 36,
+                    "8hr80km": 48,
+                    "airport": 38
+                },
+                "SUV +": {
+                    "4hr40km": 48,
+                    "8hr80km": 60,
+                    "airport": 42
+                }
+            }
+        },
+        {
+            "state": "Chandigarh",
+            "city": "Chandigarh",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 14,
+                    "8hr80km": 25,
+                    "airport": 17
+                },
+                "MUV": {
+                    "4hr40km": 31,
+                    "8hr80km": 31,
+                    "airport": 31
+                },
+                "SUV": {
+                    "4hr40km": 25,
+                    "8hr80km": 36,
+                    "airport": 25
+                },
+                "SUV +": {
+                    "4hr40km": 26,
+                    "8hr80km": 44,
+                    "airport": 26
+                }
+            }
+        },
+        {
+            "state": "Telangana",
+            "city": "Hyderabad",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 26,
+                    "8hr80km": 30,
+                    "airport": 27
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 33,
+                    "8hr80km": 45,
+                    "airport": 40
+                },
+                "MUV": {
+                    "4hr40km": 36,
+                    "8hr80km": 44,
+                    "airport": 42
+                },
+                "SUV": {
+                    "4hr40km": 40,
+                    "8hr80km": 48,
+                    "airport": 45
+                },
+                "SUV +": {
+                    "4hr40km": 54,
+                    "8hr80km": 64,
+                    "airport": 57
+                },
+                "Luxury": {
+                    "4hr40km": 71,
+                    "8hr80km": 81,
+                    "airport": 77
+                },
+                "Luxury +": {
+                    "4hr40km": 107,
+                    "8hr80km": 118,
+                    "airport": 113
+                }
+            }
+        },
+        {
+            "state": "West Bengal",
+            "city": "Kolkata",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 0,
+                    "8hr80km": 25,
+                    "airport": 20
+                },
+                "Sedan +": {
+                    "4hr40km": 0,
+                    "8hr80km": 27,
+                    "airport": 33
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 33,
+                    "airport": 38
+                },
+                "SUV": {
+                    "4hr40km": 0,
+                    "8hr80km": 48,
+                    "airport": 48
+                },
+                "Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 95,
+                    "airport": 95
+                }
+            }
+        },
+        {
+            "state": "Tamil Nadu",
+            "city": "Chennai",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 0,
+                    "8hr80km": 20,
+                    "airport": 15
+                },
+                "Sedan +": {
+                    "4hr40km": 0,
+                    "8hr80km": 33,
+                    "airport": 18
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 37,
+                    "airport": 21
+                },
+                "SUV": {
+                    "4hr40km": 0,
+                    "8hr80km": 42,
+                    "airport": 33
+                },
+                "Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 71,
+                    "airport": 71
+                }
+            }
+        },
+        {
+            "state": "Assam",
+            "city": "Guwahati",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 0,
+                    "8hr80km": 26,
+                    "airport": 26
+                },
+                "Sedan +": {
+                    "4hr40km": 0,
+                    "8hr80km": 33,
+                    "airport": 33
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 38,
+                    "airport": 38
+                },
+                "SUV": {
+                    "4hr40km": 0,
+                    "8hr80km": 42,
+                    "airport": 33
+                },
+                "Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 71,
+                    "airport": 71
+                }
+            }
+        },
+        {
+            "state": "Uttar Pradesh",
+            "city": "Lucknow",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 17,
+                    "8hr80km": 24,
+                    "airport": 26
+                },
+                "Sedan +": {
+                    "4hr40km": 21,
+                    "8hr80km": 30,
+                    "airport": 33
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 24,
+                    "8hr80km": 33,
+                    "airport": 38
+                },
+                "SUV": {
+                    "4hr40km": 30,
+                    "8hr80km": 42,
+                    "airport": 33
+                },
+                "Luxury": {
+                    "4hr40km": 71,
+                    "8hr80km": 71,
+                    "airport": 71
+                }
+            }
+        },
+        {
+            "state": "Uttar Pradesh",
+            "city": "Varanasi",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 18,
+                    "8hr80km": 26,
+                    "airport": 26
+                },
+                "Sedan +": {
+                    "4hr40km": 18,
+                    "8hr80km": 33,
+                    "airport": 33
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 21,
+                    "8hr80km": 38,
+                    "airport": 38
+                },
+                "SUV": {
+                    "4hr40km": 30,
+                    "8hr80km": 42,
+                    "airport": 33
+                },
+                "Luxury": {
+                    "4hr40km": 71,
+                    "8hr80km": 71,
+                    "airport": 71
+                }
+            }
+        },
+        {
+            "state": "Uttar Pradesh",
+            "city": "Ayodhya",
+            "pricing": {
+                "Sedan": {
+                    "4hr40km": 0,
+                    "8hr80km": 33,
+                    "airport": 26
+                },
+                "Sedan +": {
+                    "4hr40km": 0,
+                    "8hr80km": 42,
+                    "airport": 33
+                },
+                "Sedan - Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 45,
+                    "airport": 38
+                },
+                "SUV": {
+                    "4hr40km": 0,
+                    "8hr80km": 54,
+                    "airport": 45
+                },
+                "Luxury": {
+                    "4hr40km": 0,
+                    "8hr80km": 95,
+                    "airport": 95
+                }
+            }
+        }
+            ]
+        },
+        {
+            "country": "UAE",
+            "states": [
+                {
+                    "state": "Dubai",
+                    "city": "Dubai",
+                    "pricing": {
+                        "Sedan": {
+                            "4hr40km": 25,
+                            "8hr80km": 45,
+                            "airport": 30
+                        },
+                        "Sedan +": {
+                            "4hr40km": 35,
+                            "8hr80km": 60,
+                            "airport": 40
+                        },
+                        "SUV": {
+                            "4hr40km": 45,
+                            "8hr80km": 75,
+                            "airport": 50
+                        },
+                        "Luxury": {
+                            "4hr40km": 80,
+                            "8hr80km": 120,
+                            "airport": 90
+                        }
+                    }
+                },
+                {
+                    "state": "Abu Dhabi",
+                    "city": "Abu Dhabi",
+                    "pricing": {
+                        "Sedan": {
+                            "4hr40km": 28,
+                            "8hr80km": 48,
+                            "airport": 32
+                        },
+                        "Sedan +": {
+                            "4hr40km": 38,
+                            "8hr80km": 65,
+                            "airport": 42
+                        },
+                        "SUV": {
+                            "4hr40km": 48,
+                            "8hr80km": 80,
+                            "airport": 55
+                        },
+                        "Luxury": {
+                            "4hr40km": 85,
+                            "8hr80km": 130,
+                            "airport": 95
+                        }
+                    }
+                },
+                {
+                    "state": "Sharjah",
+                    "city": "Sharjah",
+                    "pricing": {
+                        "Sedan": {
+                            "4hr40km": 22,
+                            "8hr80km": 40,
+                            "airport": 28
+                        },
+                        "Sedan +": {
+                            "4hr40km": 32,
+                            "8hr80km": 55,
+                            "airport": 38
+                        },
+                        "SUV": {
+                            "4hr40km": 42,
+                            "8hr80km": 70,
+                            "airport": 48
+                        },
+                        "Luxury": {
+                            "4hr40km": 75,
+                            "8hr80km": 115,
+                            "airport": 85
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "country": "USA"
+        },
+        {
+            "country": "Canada"
+        },
+        {
+            "country": "UK"
+        },
+        {
+            "country": "Australia"
+        }
+    ],
+    "popularCities": [
+        {
+            "name": "Delhi",
+            "image": "/images/top-cities/delhi.jpg",
+            "country": "India"
+        },
+        {
+            "name": "Mumbai",
+            "image": "/images/top-cities/mumbai.jpg",
+            "country": "India"
+        },
+        {
+            "name": "Bengaluru",
+            "image": "/images/top-cities/bengaluru.jpg",
+            "country": "India"
+        },
+        {
+            "name": "Hyderabad",
+            "image": "/images/top-cities/hyderabad.jpg",
+            "country": "India"
+        },
+        {
+            "name": "Chennai",
+            "image": "/images/top-cities/chennai.jpg",
+            "country": "India"
+        },
+        {
+            "name": "Pune",
+            "image": "/images/top-cities/pune.jpg",
+            "country": "India"
+        },
+        {
+            "name": "Dubai",
+            "image": "/images/top-cities/dubai.jpg",
+            "country": "UAE"
+        },
+        {
+            "name": "Abu Dhabi",
+            "image": "/images/top-cities/abu-dhabi.jpg",
+            "country": "UAE"
+        },
+        {
+            "name": "Sharjah",
+            "image": "/images/top-cities/sharjah.jpg",
+            "country": "UAE"
+        }
+    ]
+}
