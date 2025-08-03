@@ -1,10 +1,14 @@
-// filepath: c:\Users\Adarsh\Desktop\djoride\backend\api\approve-user.js
 import admin from '../utils/admin';
 import { cors, runMiddleware } from '../utils/cors';
 
 export default async function handler(req, res) {
    // Run the CORS middleware
    await runMiddleware(req, res, cors);
+
+   // Handle preflight OPTIONS request explicitly
+   if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+   }
 
    // Only allow POST requests
    if (req.method !== 'POST') {
