@@ -1,31 +1,14 @@
 import admin from '../utils/admin.js';
 
 export default async function handler(req, res) {
-  // Allow any origin during development
-  const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://djoride.vercel.app',
-    'https://djo-ride.vercel.app'
-  ];
-  
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    // Or allow all origins for development
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  
-  // Rest of your CORS headers
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
-  // Handle OPTIONS method immediately
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+     res.setHeader('Access-Control-Allow-Origin', '*');
+   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
+   
+   // Handle OPTIONS method immediately
+   if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+   }
 
    // Only allow POST requests for the main functionality
    if (req.method !== 'POST') {
