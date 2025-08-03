@@ -1,9 +1,18 @@
-import { cors, runMiddleware } from '../utils/cors';
-
 export default async function handler(req, res) {
-  // Run the CORS middleware
-  await runMiddleware(req, res, cors);
+  // Set CORS headers manually
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle OPTIONS method
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
   
   // Send a simple response
-  res.status(200).json({ message: 'API is working!' });
+  res.status(200).json({ 
+    message: 'API is working!', 
+    timestamp: new Date().toISOString(),
+    method: req.method 
+  });
 }
