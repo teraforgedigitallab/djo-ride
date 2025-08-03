@@ -46,17 +46,6 @@ const Admin = () => {
                         status: doc.data().status || 'pending'
                     }));
 
-                    // If we found no users, add a test user for debugging
-                    if (usersData.length === 0) {
-                        console.log('No users found, adding test user for debugging');
-                        usersData = [{
-                            id: 'test-user-id',
-                            email: 'test@example.com',
-                            fullName: 'Test User',
-                            status: 'pending',
-                            phone: '123-456-7890'
-                        }];
-                    }
                 } catch (userError) {
                     console.error('Error fetching users:', userError);
                     toast.error('Error loading users');
@@ -284,3 +273,4 @@ const Admin = () => {
 
 
 export default Admin;
+
