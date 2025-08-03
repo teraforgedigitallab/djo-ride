@@ -1,14 +1,13 @@
 {
-  "name": "backend",
+  "name": "djoride-backend",
   "version": "1.0.0",
-  "description": "Backend API for DJORide",
+  "description": "Backend API for DjoRide application",
   "main": "index.js",
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel deploy --prod"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "firebase-admin": "^11.11.0"
   },
   "devDependencies": {
