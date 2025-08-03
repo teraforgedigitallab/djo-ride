@@ -1,13 +1,11 @@
 import admin from '../utils/admin.js';
 
 export default async function handler(req, res) {
-   // Set CORS headers manually to handle all requests
-   res.setHeader('Access-Control-Allow-Origin', '*');
+     res.setHeader('Access-Control-Allow-Origin', '*');
    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
-   res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-   // Handle OPTIONS method immediately (preflight request)
+   
+   // Handle OPTIONS method immediately
    if (req.method === 'OPTIONS') {
       return res.status(200).end();
    }
