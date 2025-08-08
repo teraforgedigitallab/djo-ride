@@ -1,0 +1,57 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap'); */
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  /* Purple Original */
+  --color-text: #0c0918;
+  --color-background: #f3f0fa;
+  --color-primary: #6b48be;
+  --color-secondary: #d78fcf;
+  --color-accent: #ce76a9;
+
+  /* Modern Corporate Purple*/
+  --color-text: #2d2640;
+  --color-background: #fafafe;
+  --color-primary: #5a3092;
+  --color-secondary: #9778d9;
+  --color-accent: #8c72d6;
+
+  /* Fonts */
+  --font-base: 'Inter', sans-serif;
+  --font-sans: 'Lato', sans-serif;
+}
+
+*::selection {
+  background-color: var(--color-accent);
+  color: var(--color-background);
+}
+
+/* Hide Default Icons */
+
+/* Hide default calendar icon for date input (Chrome, Edge, Safari) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    display: none;
+}
+
+/* Hide default clock icon for time input (Chrome, Edge, Safari) */
+input[type="time"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    display: none;
+}
+
+/* Hide default icons for Firefox */
+input[type="date"]::-moz-focus-inner,
+input[type="time"]::-moz-focus-inner {
+    border: 0;
+}
+
+.react-tel-input .flag-dropdown {
+  border: none !important;
+  background: transparent !important;
+  margin: 1px !important;
+}
