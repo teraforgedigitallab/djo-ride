@@ -8,7 +8,7 @@ const Features = () => {
   const features = [
     {
       icon: <Building2 size={28} />,
-      title: "Corporate Dashboard",
+      title: "Dashboard",
       description: "Centralized platform to manage all airport transfers, track expenses, and monitor team travel in real-time.",
       color: "from-primary to-secondary"
     },
@@ -32,14 +32,14 @@ const Features = () => {
     },
     {
       icon: <Users size={28} />,
-      title: "Corporate Accounts",
+      title: "Strategic Account Manager",
       description: "Dedicated account managers and customized service packages tailored to your organization's needs.",
       color: "from-accent to-secondary"
     },
     {
       icon: <CreditCard size={28} />,
       title: "Flexible Payment",
-      description: "Multiple payment options with the ability to set departmental budgets and approval workflows.",
+      description: "Multiple Payment options to suit your growing requirements",
       color: "from-secondary to-primary"
     }
   ];
@@ -70,7 +70,7 @@ const Features = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.3 }}
           >
-            Features Designed for <span className="text-primary">Business Travel</span> Efficiency
+            Features Designed for <span className="text-primary">Efficient Transport system</span>
           </motion.h2>
           <motion.p 
             className="text-lg text-text/70"
@@ -79,7 +79,7 @@ const Features = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
           >
-            Tailored functionality for corporate travel managers and business administrators to streamline airport and hotel transfers.
+            Tailored functionality for Travel Agencies and Travel Agents/Tour Operators to streamline airport and hotel transfers.
           </motion.p>
         </motion.div>
 

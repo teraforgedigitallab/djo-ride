@@ -25,7 +25,7 @@ const CTA = () => {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              Ready to streamline your corporate travel?
+              Ready to streamline your travel?
             </motion.h2>
             <motion.p
               className="text-white text-lg mb-6 max-w-xl drop-shadow"

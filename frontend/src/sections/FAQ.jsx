@@ -9,7 +9,7 @@ const FAQ = () => {
   
   const faqs = [
     {
-      question: "How does corporate billing work?",
+      question: "How does the billing work?",
       answer: "We provide consolidated monthly invoicing with detailed reports showing all transfers by department, employee, cost center, or any other parameter you specify. Invoices can be delivered electronically or via traditional mail, and we support multiple payment methods including ACH, wire transfers, and credit cards."
     },
     {
@@ -68,7 +68,7 @@ const FAQ = () => {
                 viewport={{ once: true }}
                 transition={{ delay: 0.3, duration: 0.4 }}
               >
-                Get answers to common questions about our corporate airport transfer services. If you can't find what you're looking for, our team is ready to help.
+                Get answers to common questions about our airport transfer services. If you can't find what you're looking for, our team is ready to help.
               </motion.p>
               <motion.div
                 initial={{ opacity: 0 }}
@@ -90,7 +90,7 @@ const FAQ = () => {
                 transition={{ delay: 0.5, duration: 0.4 }}
               >
                 <h3 className="font-semibold text-base sm:text-lg mb-2 text-primary">Still have questions?</h3>
-                <p className="text-sm sm:text-base text-text/70 mb-3 sm:mb-4">Our team is just a call away. Get personalized answers to all your corporate transportation questions.</p>
+                <p className="text-sm sm:text-base text-text/70 mb-3 sm:mb-4">Our team is just a call away. Get personalized answers to all your transportation related questions.</p>
                 <div className="flex items-center gap-2 text-lg font-bold text-text">
                   <Phone size={18} className="text-primary" />
                   <span>+91 99999 99999</span>

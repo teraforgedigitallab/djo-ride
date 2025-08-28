@@ -122,7 +122,7 @@ const LogoCloud = () => {
           className="text-center mb-14"
         >
           <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent inline-block">
-            Powering Corporate Travel for Industry Leaders
+            Powering Travel for Industry Leaders
           </h3>
         </motion.div>
 
@@ -187,7 +187,7 @@ const LogoCloud = () => {
           className="mt-16 text-center max-w-md mx-auto"
         >
           <p className="text-text/80 italic text-sm">
-            "Join the ranks of industry leaders who trust our services for their corporate travel needs"
+            "Join the ranks of industry leaders who trust our services for their travel needs"
           </p>
         </motion.div>
       </div>

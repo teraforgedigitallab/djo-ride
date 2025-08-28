@@ -67,7 +67,7 @@ const HowItWorks = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
           >
-            Simple Corporate Booking
+            Simple Booking
           </motion.span>
 
           <motion.h2

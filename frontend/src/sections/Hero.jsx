@@ -140,7 +140,7 @@ const HeroSection = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
               >
-                Trusted by 500+ Corporate Clients
+                Trusted by 500+ Clients
               </motion.div>
             </div>
 
@@ -150,7 +150,7 @@ const HeroSection = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.8 }}
             >
-              <span className="text-primary">Effortless</span> Airport Transfers for Your Business Teams
+              <span className="text-primary">Effortless</span> Airport Transfers for Your Clients
             </motion.h1>
 
             <motion.p
@@ -159,7 +159,7 @@ const HeroSection = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.8 }}
             >
-              Streamline corporate travel with our dedicated fleet, simplified billing, and real-time tracking platform. From airport to hotel and beyond - we handle the logistics so you don't have to.
+              Streamline travel with our dedicated fleet, simplified billing, and real-time tracking platform. From airport to hotel and beyond - we handle the logistics so you don't have to.
             </motion.p>
 
             <motion.div
@@ -168,9 +168,9 @@ const HeroSection = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.8 }}
             >
-              <Link to="/book">
+              <Link to="/login">
                 <Button size="lg" className="px-8 flex items-center gap-2 shadow-xl shadow-primary/20 w-full md:w-auto">
-                  Book Now
+                  Login Now
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
                     transition={{ repeat: Infinity, duration: 1.5, repeatDelay: 2 }}
@@ -237,7 +237,7 @@ const HeroSection = () => {
                 <div className="relative">
                   <img
                     src={heroImage}
-                    alt="Premium Airport Transfer Service for Corporate Clients"
+                    alt="Premium Airport Transfer Service for Clients"
                     className="w-full h-[300px] md:h-[500px] object-cover"
                   />
                   {/* <div className="absolute inset-0 bg-text/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
