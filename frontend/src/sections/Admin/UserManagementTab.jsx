@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Mail, User, CheckCircle, Clock, XCircle, Search, RefreshCw, UserPlus, ShieldAlert } from 'lucide-react';
+import { Mail, User, CheckCircle, Clock, XCircle, Search, RefreshCw, UserPlus, ShieldAlert, Lock } from 'lucide-react';
+import UserCredentialsModal from './UserCredentialsModal';
 
 const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [credentialsModal, setCredentialsModal] = useState({ isOpen: false, userId: null, userEmail: null });
 
     // Filter users based on search query and status filter
     const filteredUsers = users.filter(user => {
@@ -20,6 +22,18 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
             
         return matchesSearch && matchesStatus;
     });
+    
+    const openCredentialsModal = (user) => {
+        setCredentialsModal({
+            isOpen: true,
+            userId: user.id,
+            userEmail: user.email
+        });
+    };
+
+    const closeCredentialsModal = () => {
+        setCredentialsModal({ isOpen: false, userId: null, userEmail: null });
+    };
 
     return (
         <div className="space-y-4">
@@ -131,7 +145,7 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
                                         )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <div className="flex space-x-3">
+                                        <div className="flex flex-wrap gap-2">
                                             {/* Only show one of these buttons based on user state */}
                                             {user.status === 'pending' && (
                                                 <button 
@@ -158,6 +172,15 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
                                                     <CheckCircle size={16} className="mr-1" /> Reactivate
                                                 </button>
                                             )}
+
+                                            {/* Change Email/Password button for approved users with auth accounts */}
+                                            {user.status === 'approved' && user.hasAuthAccount && (
+                                                <button 
+                                                    onClick={() => openCredentialsModal(user)}
+                                                    className="px-3 py-1 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors flex items-center">
+                                                    <Lock size={16} className="mr-1" /> Change Email/Password
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -166,6 +189,16 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
                     </tbody>
                 </table>
             </div>
+
+            {/* Credentials Modal */}
+            {credentialsModal.isOpen && (
+                <UserCredentialsModal
+                    isOpen={credentialsModal.isOpen}
+                    onClose={closeCredentialsModal}
+                    userId={credentialsModal.userId}
+                    userEmail={credentialsModal.userEmail}
+                />
+            )}
         </div>
     );
 };
