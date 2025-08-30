@@ -181,7 +181,7 @@ const Navbar = () => {
             )}
 
             {/* Register Now button */}
-            <Link to="/book">
+            <Link to="/signup">
               <Button
                 variant="primary"
                 size="sm"
@@ -273,7 +273,7 @@ const Navbar = () => {
                     </Link>
                   )}
 
-                  <Link to="/book" onClick={() => setIsOpen(false)}>
+                  <Link to="/signup" onClick={() => setIsOpen(false)}>
                     <Button
                       variant="primary"
                       size="sm"
@@ -291,5 +291,6 @@ const Navbar = () => {
     </motion.nav>
   );
 };
+
 
 export default Navbar;
