@@ -1,14 +1,15 @@
-export default async function handler(req, res) {
-  // Set CORS headers manually
+module.exports = function corsHandler(req, res, fn) {
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
   
-  // Handle OPTIONS method
+  // Handle OPTIONS method for preflight requests
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    res.status(200).end();
+    return;
   }
   
-  // Send a simple response
-  res.status(200).json({ message: 'API is working!' });
-}
+  // Continue with the actual handler
+  return fn();
+};
