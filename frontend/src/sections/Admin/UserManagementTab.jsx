@@ -26,7 +26,7 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
     const openCredentialsModal = (user) => {
         setCredentialsModal({
             isOpen: true,
-            userId: user.id,
+            userId: user.authUid,
             userEmail: user.email
         });
     };
@@ -202,5 +202,6 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
         </div>
     );
 };
+
 
 export default UserManagementTab;
