@@ -140,8 +140,6 @@ const PricingManagementTab = () => {
         visible: { opacity: 1, y: 0 }
     };
 
-    // Fetch all countries
-useEffect(() => {
     const fetchCountriesAndCities = async () => {
         setLoading(true);
         setError(null);
@@ -154,7 +152,7 @@ useEffect(() => {
                 cabModelOrder: doc.data().cabModelOrder || DEFAULT_CAB_MODELS
             }));
             setCountries(countriesData);
-            
+
             // If a country is selected, fetch its cities
             if (selectedCountry) {
                 const countryDoc = await getDoc(doc(db, "pricing", selectedCountry.id));
@@ -173,8 +171,10 @@ useEffect(() => {
         }
     };
 
-    fetchCountriesAndCities();
-}, []);
+    // Fetch all countries
+    useEffect(() => {
+        fetchCountriesAndCities();
+    }, []);
 
     // Fetch cities and cabModelOrder when a country is selected
     useEffect(() => {
