@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { toast } from 'react-hot-toast';
-import { DollarSign, PlusCircle, Trash2, MapPin, Globe, Car, X, AlertCircle, ChevronDown } from 'lucide-react';
+import { getDatabase, ref, update as dbUpdate } from 'firebase/database';
+import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
+import { DollarSign, PlusCircle, Trash2, MapPin, Globe, Car, X, AlertCircle, ChevronDown, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BulkImportPricing from '../../components/BulkImportPricing';
+import BulkPricingUpdate from '../../components/BulkPricingUpdate';
+import Button from '../../components/Button';
 
 const DEFAULT_CAB_MODELS = [
     "Sedan", "Sedan +", "Sedan - Luxury", "MUV", "SUV", "SUV +", "Luxury", "Luxury +"
@@ -28,9 +32,83 @@ const PricingManagementTab = () => {
     const [cabModelOrder, setCabModelOrder] = useState(DEFAULT_CAB_MODELS);
     const [error, setError] = useState(null);
 
+    const [isGlobalUpdateOpen, setIsGlobalUpdateOpen] = useState(false);
+    const [isCountryUpdateOpen, setIsCountryUpdateOpen] = useState(false);
+    const [isCityUpdateOpen, setIsCityUpdateOpen] = useState(false);
+    const [updateLoading, setUpdateLoading] = useState(false);
+
     // Refs for scrolling and focus management
     const pricingEditorRef = useRef(null);
     const cityRowRefs = useRef({});
+
+    const { user } = useAuth();
+
+    const handleBulkUpdate = async (pricingData, updateType) => {
+        setUpdateLoading(true);
+        setError(null);
+
+        try {
+            
+            const idToken = await user.getIdToken();
+            if (!user) {
+                throw new Error('User not authenticated');
+            }
+
+            // Build updates object based on the data and update type
+            const updates = {};
+
+            // Process each pricing data item
+            pricingData.forEach(item => {
+                // Skip any items with missing required fields
+                if (!item.country || !item.city || !item.cabModel) return;
+
+                // Create reference path based on the structure
+                const refPath = `pricing/${item.country}/${item.city}/${item.cabModel}`;
+
+                // Set the values
+                updates[`${refPath}/4hr40km`] = item.fourHrRate;
+                updates[`${refPath}/8hr80km`] = item.eightHrRate;
+                updates[`${refPath}/airport`] = item.airportRate;
+            });
+
+            // If we have updates to perform
+            if (Object.keys(updates).length > 0) {
+                const db = getDatabase();
+                await dbUpdate(ref(db), updates);
+
+                // Close the modal based on update type
+                switch (updateType) {
+                    case 'global':
+                        setIsGlobalUpdateOpen(false);
+                        break;
+                    case 'country':
+                        setIsCountryUpdateOpen(false);
+                        break;
+                    case 'city':
+                        setIsCityUpdateOpen(false);
+                        break;
+                }
+
+                // Show success message
+                toast.success(`Successfully updated ${Object.keys(updates).length / 3} pricing entries`);
+
+                // Refresh the current data if needed
+                if (selectedCountry) {
+                    // Fetch countries and cities again to refresh the data
+                    // You might want to optimize this for performance
+                    fetchCountriesAndCities();
+                }
+            } else {
+                setError('No valid pricing data found to update');
+            }
+        } catch (error) {
+            console.error('Error updating pricing:', error);
+            setError(`Failed to update pricing: ${error.message}`);
+            toast.error('Failed to update pricing');
+        } finally {
+            setUpdateLoading(false);
+        }
+    };
 
     // Animation variants
     const containerVariants = {
@@ -399,10 +477,20 @@ const PricingManagementTab = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
         >
-            <h2 className="text-2xl font-bold text-primary mb-6 flex items-center">
-                <DollarSign className="mr-2" />
-                Pricing Management
-            </h2>
+            <div className="mb-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-primary flex items-center">
+                    <DollarSign className="mr-2" />
+                    Pricing Management
+                </h2>
+                <Button
+                    onClick={() => setIsGlobalUpdateOpen(true)}
+                    text="Update All Pricing"
+                    className="bg-primary text-white hover:bg-primary/90 px-4 py-2 rounded-md flex items-center"
+                >
+                    <Upload size={16} className="mr-2" />
+                    <span>Update All Pricing</span>
+                </Button>
+            </div>
 
             {/* Error Display */}
             <AnimatePresence>
@@ -529,6 +617,16 @@ const PricingManagementTab = () => {
                         animate="visible"
                         exit="exit"
                     >
+                        <div className="mt-4 mb-6 flex justify-end">
+                            <Button
+                                onClick={() => setIsCountryUpdateOpen(true)}
+                                className="bg-primary/90 text-white hover:bg-primary px-4 py-2 rounded-md flex items-center"
+                            >
+                                <Upload size={16} className="mr-2" />
+                                <span>Update All Prices for {selectedCountry.country}</span>
+                            </Button>
+                        </div>
+
                         <h3 className="text-xl font-semibold text-primary mb-4 flex items-center">
                             <MapPin className="mr-2" size={20} />
                             Cities in {selectedCountry.country}
@@ -711,7 +809,6 @@ const PricingManagementTab = () => {
                             }
                         }}
                     >
-
                         <div className="flex items-center justify-between mb-5 border-b border-primary/20 pb-3">
                             <h3 className="text-xl font-semibold text-primary flex items-center">
                                 <Car className="mr-2" size={20} />
@@ -914,6 +1011,39 @@ const PricingManagementTab = () => {
                     </motion.section>
                 )}
             </AnimatePresence>
+            <>
+                {/* Global Update Modal */}
+                <BulkPricingUpdate
+                    isOpen={isGlobalUpdateOpen}
+                    onClose={() => setIsGlobalUpdateOpen(false)}
+                    onApplyBulkUpdate={(data) => handleBulkUpdate(data, 'global')}
+                    updateType="global"
+                    loading={updateLoading}
+                />
+
+                {/* Country Update Modal */}
+                <BulkPricingUpdate
+                    isOpen={isCountryUpdateOpen}
+                    onClose={() => setIsCountryUpdateOpen(false)}
+                    onApplyBulkUpdate={(data) => handleBulkUpdate(data, 'country')}
+                    updateType="country"
+                    countryName={selectedCountry?.name || ''}
+                    loading={updateLoading}
+                />
+
+                {/* City Update Modal */}
+                {editingCity && (
+                    <BulkPricingUpdate
+                        isOpen={isCityUpdateOpen}
+                        onClose={() => setIsCityUpdateOpen(false)}
+                        onApplyBulkUpdate={(data) => handleBulkUpdate(data, 'city')}
+                        updateType="city"
+                        countryName={selectedCountry?.name || ''}
+                        cityName={editingCity.name || ''}
+                        loading={updateLoading}
+                    />
+                )}
+            </>
         </motion.div>
     );
 };

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Undo2, Redo2, Clipboard, Upload, X, AlertCircle } from 'lucide-react';
+import { Undo2, Redo2, Clipboard, Upload, X, AlertCircle, MapPin } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const BulkImportPricing = ({ onImport, activeCabModels, pricing }) => {
+const BulkImportPricing = ({ onImport, activeCabModels, pricing, cityName, countryName }) => {
   const [isActive, setIsActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [history, setHistory] = useState([]);
@@ -197,8 +197,16 @@ const BulkImportPricing = ({ onImport, activeCabModels, pricing }) => {
         >
           <Redo2 size={18} />
         </button>
+
+         
         
         <div className="flex gap-2 ml-auto">
+          {/* Show current context */}
+        <div className="text-sm text-gray-600 flex items-center">
+          <MapPin size={14} className="mr-1" />
+          Importing for: <span className="font-medium ml-1">{cityName}, {countryName}</span>
+        </div>
+        
           <button
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors"
