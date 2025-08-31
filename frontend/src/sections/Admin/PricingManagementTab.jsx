@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, getDocs, doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, setDoc, getDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,133 +42,7 @@ const PricingManagementTab = () => {
 
     const { user } = useAuth();
 
-const handleBulkUpdate = async (pricingData, updateType) => {
-    setUpdateLoading(true);
-    setError(null);
-
-    try {
-        // Validate user authentication
-        if (!user) {
-            throw new Error('User not authenticated');
-        }
-        
-        // Get authentication token
-        const idToken = await user.getIdToken();
-        
-        console.log("Bulk update data:", pricingData); // Debug logging
-        
-        if (!pricingData || pricingData.length === 0) {
-            throw new Error('No pricing data provided');
-        }
-
-        // Process each pricing data item
-        let updatedCount = 0;
-        for (const item of pricingData) {
-            // Skip any items with missing required fields
-            if (!item.country || !item.city || !item.cabModel) {
-                console.warn("Skipping item with missing data:", item);
-                continue;
-            }
-
-            try {
-                // Get reference to the country document - use the country NAME not ID
-                const countryQuery = await getDocs(
-                    collection(db, "pricing").where("country", "==", item.country)
-                );
-                
-                if (countryQuery.empty) {
-                    console.warn(`Country not found: ${item.country}`);
-                    continue;
-                }
-                
-                const countryDoc = countryQuery.docs[0];
-                const countryDocRef = countryDoc.ref;
-                
-                // Update the city pricing in the states array
-                const data = countryDoc.data();
-                const states = data.states || [];
-                
-                // Find the city to update
-                const cityIndex = states.findIndex(
-                    state => state.city.toLowerCase() === item.city.toLowerCase()
-                );
-                
-                if (cityIndex >= 0) {
-                    // Update city pricing
-                    const updatedStates = [...states];
-                    const cityData = updatedStates[cityIndex];
-                    
-                    // Make sure pricing and cab model exist
-                    if (!cityData.pricing) cityData.pricing = {};
-                    if (!cityData.pricing[item.cabModel]) cityData.pricing[item.cabModel] = {};
-                    
-                    // Update the rates
-                    cityData.pricing[item.cabModel]["4hr40km"] = Number(item.fourHrRate);
-                    cityData.pricing[item.cabModel]["8hr80km"] = Number(item.eightHrRate);
-                    cityData.pricing[item.cabModel]["airport"] = Number(item.airportRate);
-                    
-                    // Update the document
-                    await updateDoc(countryDocRef, { states: updatedStates });
-                    updatedCount++;
-                } else {
-                    console.warn(`City not found: ${item.city} in ${item.country}`);
-                }
-            } catch (itemError) {
-                console.error(`Error updating item: ${item.country}/${item.city}/${item.cabModel}`, itemError);
-            }
-        }
-
-        // Close the modal based on update type
-        switch (updateType) {
-            case 'global':
-                setIsGlobalUpdateOpen(false);
-                break;
-            case 'country':
-                setIsCountryUpdateOpen(false);
-                break;
-            case 'city':
-                setIsCityUpdateOpen(false);
-                break;
-        }
-
-        // Show success message
-        if (updatedCount > 0) {
-            toast.success(`Successfully updated ${updatedCount} pricing entries`);
-        } else {
-            toast.warning("No pricing entries were updated. Please check your data.");
-        }
-
-        // Refresh the current data
-        fetchCountriesAndCities();
-    } catch (error) {
-        console.error('Error updating pricing:', error);
-        setError(`Failed to update pricing: ${error.message}`);
-        toast.error(`Failed to update pricing: ${error.message}`);
-    } finally {
-        setUpdateLoading(false);
-    }
-};
-
-    // Animation variants
-    const containerVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: {
-                duration: 0.4,
-                when: "beforeChildren",
-                staggerChildren: 0.1
-            }
-        },
-        exit: { opacity: 0, y: -20, transition: { duration: 0.3 } }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 10 },
-        visible: { opacity: 1, y: 0 }
-    };
-
+    // Define fetchCountriesAndCities at component level
     const fetchCountriesAndCities = async () => {
         setLoading(true);
         setError(null);
@@ -198,6 +72,137 @@ const handleBulkUpdate = async (pricingData, updateType) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleBulkUpdate = async (pricingData, updateType) => {
+        setUpdateLoading(true);
+        setError(null);
+
+        try {
+            // Validate user authentication
+            if (!user) {
+                throw new Error('User not authenticated');
+            }
+            
+            // Get authentication token
+            const idToken = await user.getIdToken();
+            
+            console.log("Bulk update data:", pricingData); // Debug logging
+            
+            if (!pricingData || pricingData.length === 0) {
+                throw new Error('No pricing data provided');
+            }
+
+            // Process each pricing data item
+            let updatedCount = 0;
+            for (const item of pricingData) {
+                // Skip any items with missing required fields
+                if (!item.country || !item.city || !item.cabModel) {
+                    console.warn("Skipping item with missing data:", item);
+                    continue;
+                }
+
+                try {
+                    // Find the country document in your countries array
+                    const countryObj = countries.find(c => c.country === item.country);
+                    
+                    if (!countryObj) {
+                        console.warn(`Country not found: ${item.country}`);
+                        continue;
+                    }
+                    
+                    // Get document reference directly using ID
+                    const countryDocRef = doc(db, "pricing", countryObj.id);
+                    const countryDoc = await getDoc(countryDocRef);
+                    
+                    if (!countryDoc.exists()) {
+                        console.warn(`Country document not found: ${item.country}`);
+                        continue;
+                    }
+                    
+                    // Update the city pricing in the states array
+                    const data = countryDoc.data();
+                    const states = data.states || [];
+                    
+                    // Find the city to update
+                    const cityIndex = states.findIndex(
+                        state => state.city.toLowerCase() === item.city.toLowerCase()
+                    );
+                    
+                    if (cityIndex >= 0) {
+                        // Update city pricing
+                        const updatedStates = [...states];
+                        const cityData = updatedStates[cityIndex];
+                        
+                        // Make sure pricing and cab model exist
+                        if (!cityData.pricing) cityData.pricing = {};
+                        if (!cityData.pricing[item.cabModel]) cityData.pricing[item.cabModel] = {};
+                        
+                        // Update the rates
+                        cityData.pricing[item.cabModel]["4hr40km"] = Number(item.fourHrRate);
+                        cityData.pricing[item.cabModel]["8hr80km"] = Number(item.eightHrRate);
+                        cityData.pricing[item.cabModel]["airport"] = Number(item.airportRate);
+                        
+                        // Update the document
+                        await updateDoc(countryDocRef, { states: updatedStates });
+                        updatedCount++;
+                    } else {
+                        console.warn(`City not found: ${item.city} in ${item.country}`);
+                    }
+                } catch (itemError) {
+                    console.error(`Error updating item: ${item.country}/${item.city}/${item.cabModel}`, itemError);
+                }
+            }
+
+            // Close the modal based on update type
+            switch (updateType) {
+                case 'global':
+                    setIsGlobalUpdateOpen(false);
+                    break;
+                case 'country':
+                    setIsCountryUpdateOpen(false);
+                    break;
+                case 'city':
+                    setIsCityUpdateOpen(false);
+                    break;
+            }
+
+            // Show success message
+            if (updatedCount > 0) {
+                toast.success(`Successfully updated ${updatedCount} pricing entries`);
+            } else {
+                toast.warning("No pricing entries were updated. Please check your data.");
+            }
+
+            // Refresh the current data
+            fetchCountriesAndCities();
+        } catch (error) {
+            console.error('Error updating pricing:', error);
+            setError(`Failed to update pricing: ${error.message}`);
+            toast.error(`Failed to update pricing: ${error.message}`);
+        } finally {
+            setUpdateLoading(false);
+        }
+    };
+
+    // Animation variants
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.4,
+                when: "beforeChildren",
+                staggerChildren: 0.1
+            }
+        },
+        exit: { opacity: 0, y: -20, transition: { duration: 0.3 } }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 10 },
+        visible: { opacity: 1, y: 0 }
     };
 
     // Fetch all countries
@@ -1078,7 +1083,7 @@ const handleBulkUpdate = async (pricingData, updateType) => {
                     onClose={() => setIsCountryUpdateOpen(false)}
                     onApplyBulkUpdate={(data) => handleBulkUpdate(data, 'country')}
                     updateType="country"
-                    countryName={selectedCountry?.name || ''}
+                    countryName={selectedCountry?.country || ''}
                     loading={updateLoading}
                 />
 
@@ -1089,8 +1094,8 @@ const handleBulkUpdate = async (pricingData, updateType) => {
                         onClose={() => setIsCityUpdateOpen(false)}
                         onApplyBulkUpdate={(data) => handleBulkUpdate(data, 'city')}
                         updateType="city"
-                        countryName={selectedCountry?.name || ''}
-                        cityName={editingCity.name || ''}
+                        countryName={selectedCountry?.country || ''}
+                        cityName={editingCity.city || ''}
                         loading={updateLoading}
                     />
                 )}
