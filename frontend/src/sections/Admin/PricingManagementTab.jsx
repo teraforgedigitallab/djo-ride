@@ -4,6 +4,7 @@ import { db } from '../../firebase/config';
 import { toast } from 'react-hot-toast';
 import { DollarSign, PlusCircle, Trash2, MapPin, Globe, Car, X, AlertCircle, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BulkImportPricing from '../../components/BulkImportPricing';
 
 const DEFAULT_CAB_MODELS = [
     "Sedan", "Sedan +", "Sedan - Luxury", "MUV", "SUV", "SUV +", "Luxury", "Luxury +"
@@ -16,6 +17,8 @@ const PricingManagementTab = () => {
     const [cities, setCities] = useState([]);
     const [editingCity, setEditingCity] = useState(null);
     const [pricing, setPricing] = useState({});
+    const [pricingHistory, setPricingHistory] = useState([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
     const [loading, setLoading] = useState(false);
     const [newCountry, setNewCountry] = useState("");
     const [newCityData, setNewCityData] = useState({ state: "", city: "" });
@@ -372,6 +375,14 @@ const PricingManagementTab = () => {
         });
     };
 
+    const handleBulkImport = (newPricing) => {
+        if (!editingCity) return;
+
+        // Since we're now passing the full pricing object from BulkImportPricing
+        // we can just set it directly
+        setPricing(newPricing);
+    };
+
     // Filtered cities by state
     const filteredCities = stateFilter
         ? cities.filter(city => city.state.toLowerCase() === stateFilter.toLowerCase())
@@ -481,8 +492,8 @@ const PricingManagementTab = () => {
                             onClick={() => setSelectedCountry(country)}
                             onKeyDown={e => (e.key === "Enter" || e.key === " ") && setSelectedCountry(country)}
                             className={`p-3 rounded-md cursor-pointer transition-all flex items-center justify-between outline-none ring-offset-2 focus:ring-2 focus:ring-primary ${selectedCountry?.id === country.id
-                                    ? "bg-primary text-white shadow-md"
-                                    : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                                ? "bg-primary text-white shadow-md"
+                                : "bg-gray-100 hover:bg-gray-200 text-gray-800"
                                 }`}
                             variants={itemVariants}
                             whileHover={{ scale: 1.02 }}
@@ -492,8 +503,8 @@ const PricingManagementTab = () => {
                             <button
                                 onClick={e => { e.stopPropagation(); handleDeleteCountry(country); }}
                                 className={`ml-2 p-1.5 rounded-full focus:outline-none focus:ring-2 ${selectedCountry?.id === country.id
-                                        ? "text-white/80 hover:text-white hover:bg-white/20 focus:ring-white"
-                                        : "text-red-600 hover:text-red-800 hover:bg-red-100 focus:ring-red-500"
+                                    ? "text-white/80 hover:text-white hover:bg-white/20 focus:ring-white"
+                                    : "text-red-600 hover:text-red-800 hover:bg-red-100 focus:ring-red-500"
                                     }`}
                                 aria-label={`Delete ${country.country}`}
                                 tabIndex={0}
@@ -628,8 +639,8 @@ const PricingManagementTab = () => {
                                                         <motion.button
                                                             onClick={() => handleSetEditingCity(city)}
                                                             className={`${editingCity && editingCity.city === city.city && editingCity.state === city.state
-                                                                    ? "bg-primary text-white"
-                                                                    : "bg-primary/20 text-primary hover:bg-primary/30"
+                                                                ? "bg-primary text-white"
+                                                                : "bg-primary/20 text-primary hover:bg-primary/30"
                                                                 } px-3 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary`}
                                                             aria-label={`Edit pricing for ${city.city}, ${city.state}`}
                                                             aria-pressed={editingCity && editingCity.city === city.city && editingCity.state === city.state}
@@ -700,6 +711,7 @@ const PricingManagementTab = () => {
                             }
                         }}
                     >
+
                         <div className="flex items-center justify-between mb-5 border-b border-primary/20 pb-3">
                             <h3 className="text-xl font-semibold text-primary flex items-center">
                                 <Car className="mr-2" size={20} />
@@ -758,6 +770,14 @@ const PricingManagementTab = () => {
                             className="overflow-x-auto rounded-lg border border-gray-200 bg-white"
                             variants={itemVariants}
                         >
+                            <motion.div className="mb-5 p-4" variants={itemVariants}>
+                                <BulkImportPricing
+                                    onImport={handleBulkImport}
+                                    activeCabModels={cabModelOrder.filter(model => pricing[model])}
+                                    pricing={pricing}
+                                />
+                            </motion.div>
+
                             <table className="min-w-full divide-y divide-gray-200" aria-label="Pricing Table">
                                 <thead className="bg-gray-50">
                                     <tr>
@@ -788,6 +808,34 @@ const PricingManagementTab = () => {
                                                         min="0"
                                                         aria-label={`4hr/40km price for ${model}`}
                                                         disabled={loading}
+                                                        onPaste={e => {
+                                                            // This handles pasting directly into a cell
+                                                            e.preventDefault();
+                                                            const pasteData = e.clipboardData.getData('text').trim();
+                                                            const values = pasteData.split('\t').map(v => parseFloat(v) || 0);
+
+                                                            if (values.length >= 1) {
+                                                                const updatedPricing = { ...pricing };
+
+                                                                // Update this model with pasted values
+                                                                updatedPricing[model] = {
+                                                                    ...updatedPricing[model],
+                                                                    "4hr40km": values[0]
+                                                                };
+
+                                                                if (values.length >= 2) {
+                                                                    updatedPricing[model]["8hr80km"] = values[1];
+                                                                }
+
+                                                                if (values.length >= 3) {
+                                                                    updatedPricing[model]["airport"] = values[2];
+                                                                }
+
+                                                                // Save this state to history (if you want cell pastes in history too)
+                                                                // and update the pricing
+                                                                setPricing(updatedPricing);
+                                                            }
+                                                        }}
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
