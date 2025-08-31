@@ -141,39 +141,40 @@ const PricingManagementTab = () => {
     };
 
     // Fetch all countries
-    useEffect(() => {
-        const fetchCountriesAndCities = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                // Fetch countries
-                const pricingSnapshot = await getDocs(collection(db, "pricing"));
-                const countriesData = pricingSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    country: doc.data().country,
-                    cabModelOrder: doc.data().cabModelOrder || DEFAULT_CAB_MODELS
-                }));
-                setCountries(countriesData);
-
-                // If a country is selected, fetch its cities
-                if (selectedCountry) {
-                    const countryDoc = await getDoc(doc(db, "pricing", selectedCountry.id));
-                    if (countryDoc.exists()) {
-                        const data = countryDoc.data();
-                        setCities(data.states || []);
-                        setCabModelOrder(data.cabModelOrder || DEFAULT_CAB_MODELS);
-                    }
+useEffect(() => {
+    const fetchCountriesAndCities = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Fetch countries
+            const pricingSnapshot = await getDocs(collection(db, "pricing"));
+            const countriesData = pricingSnapshot.docs.map(doc => ({
+                id: doc.id,
+                country: doc.data().country,
+                cabModelOrder: doc.data().cabModelOrder || DEFAULT_CAB_MODELS
+            }));
+            setCountries(countriesData);
+            
+            // If a country is selected, fetch its cities
+            if (selectedCountry) {
+                const countryDoc = await getDoc(doc(db, "pricing", selectedCountry.id));
+                if (countryDoc.exists()) {
+                    const data = countryDoc.data();
+                    setCities(data.states || []);
+                    setCabModelOrder(data.cabModelOrder || DEFAULT_CAB_MODELS);
                 }
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
-                setError("Failed to load data. Please try again.");
-                toast.error("Failed to load data");
-            } finally {
-                setLoading(false);
             }
-        };
-        fetchCountries();
-    }, []);
+        } catch (error) {
+            console.error("Failed to fetch data:", error);
+            setError("Failed to load data. Please try again.");
+            toast.error("Failed to load data");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchCountriesAndCities();
+}, []);
 
     // Fetch cities and cabModelOrder when a country is selected
     useEffect(() => {
