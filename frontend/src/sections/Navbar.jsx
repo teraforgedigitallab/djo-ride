@@ -181,7 +181,7 @@ const Navbar = () => {
             )}
 
             {/* Register Now button */}
-            <Link to="/signup">
+            <Link to="/book">
               <Button
                 variant="primary"
                 size="sm"
@@ -273,7 +273,7 @@ const Navbar = () => {
                     </Link>
                   )}
 
-                  <Link to="/signup" onClick={() => setIsOpen(false)}>
+                  <Link to="/book" onClick={() => setIsOpen(false)}>
                     <Button
                       variant="primary"
                       size="sm"

@@ -83,12 +83,12 @@ const PricingManagementTab = () => {
             if (!user) {
                 throw new Error('User not authenticated');
             }
-            
+
             // Get authentication token
             const idToken = await user.getIdToken();
-            
+
             console.log("Bulk update data:", pricingData); // Debug logging
-            
+
             if (!pricingData || pricingData.length === 0) {
                 throw new Error('No pricing data provided');
             }
@@ -105,44 +105,44 @@ const PricingManagementTab = () => {
                 try {
                     // Find the country document in your countries array
                     const countryObj = countries.find(c => c.country === item.country);
-                    
+
                     if (!countryObj) {
                         console.warn(`Country not found: ${item.country}`);
                         continue;
                     }
-                    
+
                     // Get document reference directly using ID
                     const countryDocRef = doc(db, "pricing", countryObj.id);
                     const countryDoc = await getDoc(countryDocRef);
-                    
+
                     if (!countryDoc.exists()) {
                         console.warn(`Country document not found: ${item.country}`);
                         continue;
                     }
-                    
+
                     // Update the city pricing in the states array
                     const data = countryDoc.data();
                     const states = data.states || [];
-                    
+
                     // Find the city to update
                     const cityIndex = states.findIndex(
                         state => state.city.toLowerCase() === item.city.toLowerCase()
                     );
-                    
+
                     if (cityIndex >= 0) {
                         // Update city pricing
                         const updatedStates = [...states];
                         const cityData = updatedStates[cityIndex];
-                        
+
                         // Make sure pricing and cab model exist
                         if (!cityData.pricing) cityData.pricing = {};
                         if (!cityData.pricing[item.cabModel]) cityData.pricing[item.cabModel] = {};
-                        
+
                         // Update the rates
                         cityData.pricing[item.cabModel]["4hr40km"] = Number(item.fourHrRate);
                         cityData.pricing[item.cabModel]["8hr80km"] = Number(item.eightHrRate);
                         cityData.pricing[item.cabModel]["airport"] = Number(item.airportRate);
-                        
+
                         // Update the document
                         await updateDoc(countryDocRef, { states: updatedStates });
                         updatedCount++;
@@ -928,6 +928,8 @@ const PricingManagementTab = () => {
                                     onImport={handleBulkImport}
                                     activeCabModels={cabModelOrder.filter(model => pricing[model])}
                                     pricing={pricing}
+                                    cityName={editingCity.city}
+                                    countryName={selectedCountry?.country || ''}
                                 />
                             </motion.div>
 
