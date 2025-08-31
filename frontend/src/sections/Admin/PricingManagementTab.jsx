@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, doc, updateDoc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { getDatabase, ref, update as dbUpdate } from 'firebase/database';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import { DollarSign, PlusCircle, Trash2, MapPin, Globe, Car, X, AlertCircle, ChevronDown, Upload } from 'lucide-react';
@@ -48,58 +47,69 @@ const PricingManagementTab = () => {
         setError(null);
 
         try {
-            
             const idToken = await user.getIdToken();
             if (!user) {
                 throw new Error('User not authenticated');
             }
 
-            // Build updates object based on the data and update type
-            const updates = {};
-
             // Process each pricing data item
-            pricingData.forEach(item => {
+            for (const item of pricingData) {
                 // Skip any items with missing required fields
-                if (!item.country || !item.city || !item.cabModel) return;
+                if (!item.country || !item.city || !item.cabModel) continue;
 
-                // Create reference path based on the structure
-                const refPath = `pricing/${item.country}/${item.city}/${item.cabModel}`;
+                // Get reference to the country document
+                const countryDocRef = doc(db, "pricing", item.country);
+                const countryDoc = await getDoc(countryDocRef);
 
-                // Set the values
-                updates[`${refPath}/4hr40km`] = item.fourHrRate;
-                updates[`${refPath}/8hr80km`] = item.eightHrRate;
-                updates[`${refPath}/airport`] = item.airportRate;
-            });
+                if (countryDoc.exists()) {
+                    // Update the city pricing in the states array
+                    const data = countryDoc.data();
+                    const states = data.states || [];
 
-            // If we have updates to perform
-            if (Object.keys(updates).length > 0) {
-                const db = getDatabase();
-                await dbUpdate(ref(db), updates);
+                    // Find the city to update
+                    const cityIndex = states.findIndex(
+                        state => state.city.toLowerCase() === item.city.toLowerCase()
+                    );
 
-                // Close the modal based on update type
-                switch (updateType) {
-                    case 'global':
-                        setIsGlobalUpdateOpen(false);
-                        break;
-                    case 'country':
-                        setIsCountryUpdateOpen(false);
-                        break;
-                    case 'city':
-                        setIsCityUpdateOpen(false);
-                        break;
+                    if (cityIndex >= 0) {
+                        // Update city pricing
+                        const updatedStates = [...states];
+                        const cityData = updatedStates[cityIndex];
+
+                        // Make sure pricing and cab model exist
+                        if (!cityData.pricing) cityData.pricing = {};
+                        if (!cityData.pricing[item.cabModel]) cityData.pricing[item.cabModel] = {};
+
+                        // Update the rates
+                        cityData.pricing[item.cabModel]["4hr40km"] = item.fourHrRate;
+                        cityData.pricing[item.cabModel]["8hr80km"] = item.eightHrRate;
+                        cityData.pricing[item.cabModel]["airport"] = item.airportRate;
+
+                        // Update the document
+                        await updateDoc(countryDocRef, { states: updatedStates });
+                    }
                 }
+            }
 
-                // Show success message
-                toast.success(`Successfully updated ${Object.keys(updates).length / 3} pricing entries`);
+            // Close the modal based on update type
+            switch (updateType) {
+                case 'global':
+                    setIsGlobalUpdateOpen(false);
+                    break;
+                case 'country':
+                    setIsCountryUpdateOpen(false);
+                    break;
+                case 'city':
+                    setIsCityUpdateOpen(false);
+                    break;
+            }
 
-                // Refresh the current data if needed
-                if (selectedCountry) {
-                    // Fetch countries and cities again to refresh the data
-                    // You might want to optimize this for performance
-                    fetchCountriesAndCities();
-                }
-            } else {
-                setError('No valid pricing data found to update');
+            // Show success message
+            toast.success(`Successfully updated pricing entries`);
+
+            // Refresh the current data
+            if (selectedCountry) {
+                fetchCountriesAndCities();
             }
         } catch (error) {
             console.error('Error updating pricing:', error);
@@ -132,10 +142,11 @@ const PricingManagementTab = () => {
 
     // Fetch all countries
     useEffect(() => {
-        const fetchCountries = async () => {
+        const fetchCountriesAndCities = async () => {
             setLoading(true);
             setError(null);
             try {
+                // Fetch countries
                 const pricingSnapshot = await getDocs(collection(db, "pricing"));
                 const countriesData = pricingSnapshot.docs.map(doc => ({
                     id: doc.id,
@@ -143,10 +154,20 @@ const PricingManagementTab = () => {
                     cabModelOrder: doc.data().cabModelOrder || DEFAULT_CAB_MODELS
                 }));
                 setCountries(countriesData);
+
+                // If a country is selected, fetch its cities
+                if (selectedCountry) {
+                    const countryDoc = await getDoc(doc(db, "pricing", selectedCountry.id));
+                    if (countryDoc.exists()) {
+                        const data = countryDoc.data();
+                        setCities(data.states || []);
+                        setCabModelOrder(data.cabModelOrder || DEFAULT_CAB_MODELS);
+                    }
+                }
             } catch (error) {
-                console.error("Failed to load countries:", error);
-                setError("Failed to load countries. Please try again.");
-                toast.error("Failed to load countries");
+                console.error("Failed to fetch data:", error);
+                setError("Failed to load data. Please try again.");
+                toast.error("Failed to load data");
             } finally {
                 setLoading(false);
             }
