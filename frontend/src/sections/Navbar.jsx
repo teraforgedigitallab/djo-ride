@@ -4,6 +4,7 @@ import { Menu, X, CarTaxiFront, LogIn, LogOut, Settings } from 'lucide-react';
 import Button from '../components/Button';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
 export function ScrollToHash() {
   const location = useLocation();
@@ -24,11 +25,36 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeLink, setActiveLink] = useState('home');
-  const location = useLocation();
   const { user, logout, isAdmin } = useAuth();
+  const [userData, setUserData] = useState(null);
+  const db = getFirestore();
 
   const clickedNavRef = useRef(false);
   const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user) {
+        try {
+          // Use email for lookup, as in Book.jsx
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("email", "==", user.email));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            const docData = querySnapshot.docs[0].data();
+            setUserData(docData);
+          } else {
+            setUserData(null);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      } else {
+        setUserData(null);
+      }
+    };
+    fetchUserData();
+  }, [user, db]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,7 +91,7 @@ const Navbar = () => {
     { name: 'Home', href: '#home', id: 'home' },
     { name: 'Services', href: '#services', id: 'services' },
     { name: 'How It Works', href: '#how-it-works', id: 'how-it-works' },
-    { name: 'Testimonials', href: '#testimonials', id: 'testimonials' },
+    { name: 'Testimonials', href: '/testimonials', id: 'testimonials' },
     { name: 'FAQ', href: '#faq', id: 'faq' },
     { name: 'Contact', href: '#contact', id: 'contact' },
   ];
@@ -143,7 +169,7 @@ const Navbar = () => {
             {user ? (
               <div className="flex items-center gap-2">
                 {/* Admin button - only show if admin */}
-                {isAdmin && isAdmin() && (
+                {isAdmin && isAdmin() ? (
                   <Link to="/admin">
                     <Button
                       size="sm"
@@ -151,11 +177,20 @@ const Navbar = () => {
                       className="flex items-center gap-1 px-3"
                     >
                       <Settings size={16} />
-                      Admin
+                      DJO Admin
                     </Button>
                   </Link>
+                ) : (
+                  // Non-admin: show company name only, no icon
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="px-3"
+                  >
+                    <span>{userData?.companyName || 'Company Name'}</span>
+                  </Button>
                 )}
-                
+
                 {/* Logout Button */}
                 <Button
                   onClick={handleLogout}
@@ -187,7 +222,7 @@ const Navbar = () => {
                 size="sm"
                 className="flex items-center gap-1 !px-3 !py-2"
               >
-                Register Now
+                Book Now
               </Button>
             </Link>
           </div>
@@ -248,7 +283,7 @@ const Navbar = () => {
                           </Button>
                         </Link>
                       )}
-                      
+
                       {/* Logout button for mobile */}
                       <Button
                         onClick={handleLogout}
@@ -279,7 +314,7 @@ const Navbar = () => {
                       size="sm"
                       className="flex items-center justify-center gap-2 w-full !py-2"
                     >
-                      Register Now
+                      Book Now
                     </Button>
                   </Link>
                 </div>

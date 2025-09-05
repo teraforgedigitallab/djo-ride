@@ -11,13 +11,13 @@ const HowItWorks = () => {
     {
       icon: <MapPin size={28} className="text-white" />,
       title: "Select City & Location",
-      description: "Start by choosing your city and pickup location. We offer airport transfers in major business hubs across India.",
+      description: "Start by choosing your city and pickup location. We offer airport transfers in major business hubs across the globe.",
       bullets: [
         "Wide city coverage",
         "Popular and custom locations",
         "Instant city-based pricing"
       ],
-      cta: "Get Started",
+      cta: "Book Now",
       ctaLink: "/book",
       image: "/images/how-it-works/howitworks1.jpg"
     },

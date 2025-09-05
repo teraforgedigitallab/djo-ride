@@ -34,7 +34,7 @@ const CTA = () => {
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
             >
-              Schedule a personalized demo with our team to see how our platform can simplify airport transfers for your entire organization.
+              Schedule a personalized demo with our team to see how our platform can simplify airport transfers for your entire company.
             </motion.p>
 
             <motion.div

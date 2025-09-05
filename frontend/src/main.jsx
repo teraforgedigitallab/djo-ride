@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
-import { Home, Book, Login, SignUp, Admin } from './pages'
+import { Home, TestimonialsPage, Book, Login, SignUp, Admin } from './pages'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute'
 import { Toaster } from 'react-hot-toast'
@@ -15,6 +15,7 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<Home />} />
+          <Route path="testimonials" element={<TestimonialsPage />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<SignUp />} />
           <Route path="book" element={

@@ -5,17 +5,16 @@ import { emailValidation, passwordValidation } from '../utils/formValidation';
 import { LogIn, Eye, EyeClosed, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 
 const Login = () => {
-    const location = useLocation();
     const navigate = useNavigate();
     const { login, resetPassword } = useAuth();
 
     // Get the redirect path from location state or default to home
-    const from = location.state?.from?.pathname || '/';
+    const from = '/#how-it-works';
 
     // State for reset password modal
     const [showResetModal, setShowResetModal] = useState(false);
@@ -42,7 +41,7 @@ const Login = () => {
     const onSubmit = async (data) => {
         // Save rememberMe preference in localStorage
         localStorage.setItem('rememberMe', data.rememberMe);
-        
+
         const success = await login(data.email, data.password, data.rememberMe);
         if (success) {
             // Navigate to the page they were trying to access or to home
@@ -59,12 +58,12 @@ const Login = () => {
 
     const handlePasswordReset = async (e) => {
         e.preventDefault();
-        
+
         if (!resetEmail || !resetEmail.includes('@')) {
             toast.error('Please enter a valid email address');
             return;
         }
-        
+
         try {
             setResetting(true);
             await resetPassword(resetEmail);
@@ -84,11 +83,9 @@ const Login = () => {
                     Welcome Back!
                 </h1>
 
-                {from !== "/" && (
-                    <div className="p-3 bg-primary/10 rounded-lg text-sm text-primary">
-                        Please log in to continue to {from.replace('/', '')}
-                    </div>
-                )}
+                <div className="p-3 bg-primary/10 rounded-lg text-sm text-primary text-center">
+                    Please log in to continue.
+                </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
                     <InputField
@@ -134,9 +131,9 @@ const Login = () => {
                             </label>
                         </div>
                         <div className="text-sm">
-                            <button 
+                            <button
                                 type="button"
-                                onClick={handleForgotPassword} 
+                                onClick={handleForgotPassword}
                                 className="font-medium text-primary hover:underline"
                             >
                                 Forgot password?
@@ -171,7 +168,7 @@ const Login = () => {
                         <p className="text-gray-600 mb-4">
                             Enter your email address and we'll send you a link to reset your password.
                         </p>
-                        
+
                         <form onSubmit={handlePasswordReset} className="space-y-4">
                             <div className="relative">
                                 <InputField
@@ -184,18 +181,18 @@ const Login = () => {
                                 />
                                 <Mail size={18} className="absolute right-3 top-9 text-gray-400" />
                             </div>
-                            
+
                             <div className="flex gap-3 justify-end">
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
+                                <Button
+                                    type="button"
+                                    variant="outline"
                                     onClick={() => setShowResetModal(false)}
                                     disabled={resetting}
                                 >
                                     Cancel
                                 </Button>
-                                <Button 
-                                    type="submit" 
+                                <Button
+                                    type="submit"
                                     disabled={resetting}
                                 >
                                     {resetting ? 'Sending...' : 'Send Reset Link'}

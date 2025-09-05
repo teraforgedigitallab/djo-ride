@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import {
     getAuth,
     onAuthStateChanged,
@@ -18,6 +18,9 @@ const AuthContext = createContext();
 // Array of admin emails
 const ADMIN_EMAILS = import.meta.env.VITE_ADMIN_EMAILS ? JSON.parse(import.meta.env.VITE_ADMIN_EMAILS) : [];
 
+// Inactivity timeout in milliseconds (5 minutes)
+const INACTIVITY_TIMEOUT = 300000;
+
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
@@ -25,14 +28,64 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const auth = getAuth(app);
     const navigate = useNavigate();
+    const inactivityTimerRef = useRef(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             setUser(firebaseUser);
             setLoading(false);
+
+            // If user is logged in, start the inactivity timer
+            if (firebaseUser) {
+                resetInactivityTimer();
+            }
         });
         return () => unsubscribe();
     }, [auth]);
+
+    // Setup event listeners for user activity
+    useEffect(() => {
+        if (!user) return;
+
+        const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+
+        const handleUserActivity = () => {
+            resetInactivityTimer();
+        };
+
+        // Add event listeners
+        activityEvents.forEach(event => {
+            document.addEventListener(event, handleUserActivity);
+        });
+
+        // Cleanup function
+        return () => {
+            // Clear the timer
+            if (inactivityTimerRef.current) {
+                clearTimeout(inactivityTimerRef.current);
+            }
+
+            // Remove event listeners
+            activityEvents.forEach(event => {
+                document.removeEventListener(event, handleUserActivity);
+            });
+        };
+    }, [user]);
+
+    // Reset inactivity timer
+    const resetInactivityTimer = () => {
+        // Clear existing timer
+        if (inactivityTimerRef.current) {
+            clearTimeout(inactivityTimerRef.current);
+        }
+
+        // Set new timer
+        inactivityTimerRef.current = setTimeout(() => {
+            if (user) {
+                logout(true); // Pass true to indicate auto logout
+            }
+        }, INACTIVITY_TIMEOUT);
+    };
 
     // Check if user is admin
     const isAdmin = () => {
@@ -45,12 +98,13 @@ export const AuthProvider = ({ children }) => {
             // Set persistence based on rememberMe
             await setPersistence(auth,
                 rememberMe
-                    ? browserLocalPersistence  // Keep user logged in
-                    : browserSessionPersistence 
+                    ? browserLocalPersistence
+                    : browserSessionPersistence
             );
 
             await signInWithEmailAndPassword(auth, email, password);
             toast.success('Successfully logged in!');
+            resetInactivityTimer();
             return true;
         } catch (error) {
             console.error("Login error:", error);
@@ -86,11 +140,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Rest of your code remains the same
-    const logout = async () => {
+    const logout = async (autoLoggedOut = false) => {
         try {
+            // Clear the inactivity timer when logging out
+            if (inactivityTimerRef.current) {
+                clearTimeout(inactivityTimerRef.current);
+            }
+
             await signOut(auth);
-            toast.success('Logged out successfully');
+            if (autoLoggedOut) {
+                toast.error('You have been logged out due to inactivity');
+            } else {
+                toast.success('Logged out successfully');
+            }
             navigate('/');
         } catch (error) {
             toast.error('Failed to log out');

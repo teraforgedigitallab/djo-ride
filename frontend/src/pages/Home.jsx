@@ -15,7 +15,7 @@ const Home = () => {
             {/* <LogoCloud /> */}
             <Features />
             <HowItWorks />
-            <Testimonials />
+            {/* <Testimonials /> */}
             <FAQ />
             <CTA />
         </>

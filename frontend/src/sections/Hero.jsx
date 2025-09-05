@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Shield, Clock, MapPin, PlayCircle } from 'lucide-react';
 import Button from '../components/Button';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 // import VideoModal from '../components/VideoModal';
 
 // https://youtu.be/5T4l9eKHQgE?si=Ci08tg0yfG5dA8dO
@@ -14,6 +15,7 @@ const HeroSection = () => {
   const requestRef = useRef();
   // const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [isInView, setIsInView] = useState(true);
+  const { user } = useAuth();
 
   // Images
   const heroImage = "/images/heroImg.jpg";
@@ -162,7 +164,7 @@ const HeroSection = () => {
               Streamline travel with our dedicated fleet, simplified billing, and real-time tracking platform. From airport to hotel and beyond - we handle the logistics so you don't have to.
             </motion.p>
 
-            <motion.div
+            {!user && (<motion.div
               className="flex flex-col md:flex-row gap-4 mb-12"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -194,7 +196,7 @@ const HeroSection = () => {
                   <PlayCircle size={18} className="text-primary" />
                 </motion.div>
               </Button> */}
-            </motion.div>
+            </motion.div>)}
 
             <motion.div
               className="grid grid-cols-3 gap-4"

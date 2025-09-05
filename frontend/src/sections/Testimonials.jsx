@@ -18,7 +18,7 @@ const Testimonials = () => {
       image: "/images/testimonials/testimonial1.jpg"
     },
     {
-      quote: "The consolidated billing feature alone has saved our accounting department countless hours. Our employees appreciate the professional drivers and the peace of mind that comes with the tracking feature. Best travel decision we've made in years.",
+      quote: "The consolidated billing feature alone has saved our countless hours. Our employees appreciate the professional drivers and the peace of mind that comes with the tracking feature. Best travel decision we've made in years.",
       name: "Michael Chen",
       title: "Operations Director",
       company: "InnovateCorp",
@@ -110,7 +110,7 @@ const Testimonials = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
           >
-            Trusted by travel managers and administrators worldwide.
+            Trusted by agents worldwide.
           </motion.p>
         </motion.div>
 

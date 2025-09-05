@@ -3,7 +3,7 @@
         {
             "model": "Sedan",
             "carType": "Dzire/ Amaze or Similar",
-            "image": "/images/car-models/sedan.jpg",
+            "image": "/images/car-models/Sedan.jpg",
             "exArrival": "60 Mins",
             "exDeparture": "15 Mins",
             "capacity": 4,
@@ -19,7 +19,7 @@
         {
             "model": "Sedan +",
             "carType": "Ciaz/ Honda City or Similar",
-            "image": "/images/car-models/sedan+.jpg",
+            "image": "/images/car-models/Sedan+.jpg",
             "exArrival": "60 Mins",
             "exDeparture": "15 Mins",
             "capacity": 4,
@@ -36,7 +36,7 @@
         {
             "model": "MUV",
             "carType": "Ertiga or Similar",
-            "image": "/images/car-models/muv.jpg",
+            "image": "/images/car-models/MUV.jpg",
             "exArrival": "60 Mins",
             "exDeparture": "15 Mins",
             "capacity": 6,
@@ -53,7 +53,7 @@
         {
             "model": "SUV",
             "carType": "Innova Crysta or Similar",
-            "image": "/images/car-models/suv.jpg",
+            "image": "/images/car-models/SUV.jpg",
             "exArrival": "60 Mins",
             "exDeparture": "15 Mins",
             "capacity": 6,
@@ -70,7 +70,7 @@
         {
             "model": "Sedan - Luxury",
             "carType": "Altis",
-            "image": "/images/car-models/sedanluxury.png",
+            "image": "/images/car-models/SedanLuxury.jpg",
             "exArrival": "60 Mins",
             "exDeparture": "15 Mins",
             "capacity": 4,
@@ -87,7 +87,7 @@
         {
             "model": "SUV +",
             "carType": "BYD/ Hycross",
-            "image": "/images/car-models/suv+.jpg",
+            "image": "/images/car-models/SUV+.jpg",
             "exArrival": "60 Mins",
             "exDeparture": "15 Mins",
             "capacity": 6,
@@ -104,7 +104,7 @@
         {
             "model": "Luxury",
             "carType": "Camry / Fortuner",
-            "image": "/images/car-models/luxury.jpg",
+            "image": "/images/car-models/Luxury.jpg",
             "exArrival": "60 Mins",
             "exDeparture": "15 Mins",
             "capacity": 6,
@@ -121,7 +121,7 @@
         {
             "model": "Luxury +",
             "carType": "E - Class",
-            "image": "/images/car-models/luxury+.jpg",
+            "image": "/images/car-models/Luxury+.jpg",
             "exArrival": "60 Mins",
             "exDeparture": "15 Mins",
             "capacity": 4,

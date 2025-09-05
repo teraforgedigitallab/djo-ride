@@ -26,14 +26,14 @@ const Features = () => {
     },
     {
       icon: <Clock size={28} />,
-      title: "24/7 Availability",
+      title: "Round the Clock Support",
       description: "Round-the-clock support and service availability for international flights and urgent business travel needs.",
       color: "from-primary to-accent"
     },
     {
       icon: <Users size={28} />,
       title: "Strategic Account Manager",
-      description: "Dedicated account managers and customized service packages tailored to your organization's needs.",
+      description: "Dedicated account managers and customized service packages tailored to your company's needs.",
       color: "from-accent to-secondary"
     },
     {
@@ -105,7 +105,7 @@ const Features = () => {
                 <h3 className="text-xl font-bold text-text mb-4 group-hover:text-primary transition-colors duration-300">{feature.title}</h3>
                 <p className="text-text/70 mb-6">{feature.description}</p>
                 
-                <div className="flex items-center text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* <div className="flex items-center text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <span>Learn more</span>
                   <motion.div
                     animate={hoveredFeature === index ? { x: [0, 5, 0] } : {}}
@@ -113,7 +113,7 @@ const Features = () => {
                   >
                     <ChevronRight size={18} className="ml-1" />
                   </motion.div>
-                </div>
+                </div> */}
                 
                 <motion.div
                   className="absolute -bottom-3 -right-3 w-20 h-20 bg-gradient-to-tl opacity-10"

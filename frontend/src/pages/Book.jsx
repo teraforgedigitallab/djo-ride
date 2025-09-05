@@ -155,7 +155,7 @@ const Book = () => {
     };
 
     return (
-        <div className="container mx-auto px-3 pt-32 pb-10 max-w-7xl min-h-screen" ref={selectedCabRef}>
+        <div className="container mx-auto px-3 pt-32 pb-10 max-w-7xl" ref={selectedCabRef}>
             <AnimatePresence mode="wait">
                 {!selectedCity ? (
                     <motion.div

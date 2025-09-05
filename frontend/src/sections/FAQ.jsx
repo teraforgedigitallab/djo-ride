@@ -10,11 +10,11 @@ const FAQ = () => {
   const faqs = [
     {
       question: "How does the billing work?",
-      answer: "We provide consolidated monthly invoicing with detailed reports showing all transfers by department, employee, cost center, or any other parameter you specify. Invoices can be delivered electronically or via traditional mail, and we support multiple payment methods including ACH, wire transfers, and credit cards."
+      answer: "We provide consolidated monthly invoicing with detailed reports showing all transfers by employee, cost center, or any other parameter you specify. Invoices can be delivered electronically or via traditional mail, and we support multiple payment methods including ACH, wire transfers, and credit cards."
     },
     {
       question: "Can we set different service levels for different employees?",
-      answer: "Yes, our platform allows you to define service tiers based on employee seniority, department, or other criteria. You can customize vehicle types, waiting times, and additional services for each tier, ensuring appropriate service levels while maintaining cost control."
+      answer: "Yes, our platform allows you to define service tiers based on employee seniority or other criteria. You can customize vehicle types, waiting times, and additional services for each tier, ensuring appropriate service levels while maintaining cost control."
     },
     {
       question: "How do you handle flight delays?",
@@ -22,7 +22,7 @@ const FAQ = () => {
     },
     {
       question: "Is there a minimum commitment or contract required?",
-      answer: "We offer flexible terms tailored to your organization's needs. While our most competitive rates are available with annual commitments, we also provide month-to-month options. Our account managers can work with you to determine the best arrangement for your specific requirements."
+      answer: "We offer flexible terms tailored to your company's needs. While our most competitive rates are available with annual commitments, we also provide month-to-month options. Our account managers can work with you to determine the best arrangement for your specific requirements."
     },
     {
       question: "How do you ensure driver quality and safety?",

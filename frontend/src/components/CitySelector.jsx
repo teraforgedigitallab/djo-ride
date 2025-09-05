@@ -3,6 +3,7 @@ import { Search, MapPin, Globe, ChevronDown, ChevronUp, AlertCircle } from 'luci
 import { motion, AnimatePresence } from 'framer-motion';
 import data from '../data/data.json';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { US, IN, AE, CA, GB, AU } from 'country-flag-icons/react/3x2';
 
 const CitySelector = ({ onCitySelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -101,6 +102,28 @@ const CitySelector = ({ onCitySelect }) => {
     setShowCountrySelector(prev => !prev);
   };
 
+    // Function to get country flag component
+  const CountryFlag = ({ country }) => {
+    const flagSize = { width: '100%', height: '100%' };
+    
+    switch(country.toLowerCase()) {
+      case 'usa':
+        return <US style={flagSize} />;
+      case 'india':
+        return <IN style={flagSize} />;
+      case 'uae':
+        return <AE style={flagSize} />;
+      case 'canada':
+        return <CA style={flagSize} />;
+      case 'uk':
+        return <GB style={flagSize} />;
+      case 'australia':
+        return <AU style={flagSize} />;
+      default:
+        return country.charAt(0); // Fallback to first letter
+    }
+  };
+
   // Use static images from data.json
   const getCityImageUrl = (city) => {
     const popularCity = data.popularCities.find(
@@ -148,14 +171,14 @@ const CitySelector = ({ onCitySelect }) => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto py-20">
       <motion.h2
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="text-2xl font-bold mb-6 text-center text-primary"
       >
-        Select Your Location
+        Select City to Book your Ride
       </motion.h2>
 
       {/* Country Selector */}
@@ -203,9 +226,9 @@ const CitySelector = ({ onCitySelect }) => {
                     onClick={() => handleCountrySelect(country)}
                   >
                     <div className="flex items-center">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${selectedCountry === country ? 'bg-white text-primary' : 'bg-primary/10 text-primary'
+                      <div className={`w-10 h-10 p-2 rounded-full flex items-center justify-center ${selectedCountry === country ? 'bg-white text-primary' : 'bg-primary/10 text-primary'
                         }`}>
-                        {country.charAt(0)}
+                        <CountryFlag country={country} />
                       </div>
                       <p className="ml-2 font-medium text-sm">{country}</p>
                     </div>

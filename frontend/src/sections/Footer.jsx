@@ -73,7 +73,7 @@ const Footer = () => {
               <span className="ml-3 text-2xl font-bold text-white">DJO<span className="text-accent">Ride</span></span>
             </div>
             <p className="text-white/70 mb-6">
-              Professional airport transfer services tailored for clients. Reliable, efficient, and stress-free transportation solutions for businesses worldwide.
+              Professional airport transfer services tailored for Agencies and Tour operators. Reliable, efficient, and stress-free transportation solutions for Agencies worldwide.
             </p>
             <div className="flex space-x-3">
               {socialLinks.map((social, index) => (
