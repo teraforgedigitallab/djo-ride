@@ -278,68 +278,10 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                     </div>
 
                     <div className="p-4 md:p-6">
-                        {/* Booking Summary Card */}
-                        <motion.div
-                            className="mb-6 bg-gradient-to-r from-primary/5 to-gray-50 p-5 rounded-lg border border-gray-200"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1, duration: 0.4 }}
-                        >
-                            <h3 className="text-primary font-bold text-lg mb-4 flex items-center">
-                                <CheckCircle size={18} className="mr-2" />
-                                Booking Summary
-                            </h3>
-
-                            {/* Selected Packages - Read Only */}
-                            <div className="mb-4">
-                                <p className="text-sm font-medium mb-3 text-gray-700">
-                                    Selected Packages ({selectedPackages.reduce((sum, pkg) => sum + pkg.quantity, 0)} items)
-                                </p>
-
-                                <div className="space-y-3">
-                                    {selectedPackages.map((pkg, index) => (
-                                        <div key={`${pkg.model}-${pkg.packageType}-${index}`}
-                                            className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white rounded-md border border-gray-200">
-                                            <div className="mb-2 sm:mb-0">
-                                                <p className="text-sm"><span className="font-medium">Car:</span> {pkg.model}</p>
-                                                <p className="text-sm text-gray-700"><span className="font-medium">Package:</span> {formatPackageType(pkg.packageType)}</p>
-                                            </div>
-                                            <div className="flex items-center">
-                                                {pkg.quantity > 1 && (
-                                                    <span className="mr-3 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
-                                                        x{pkg.quantity}
-                                                    </span>
-                                                )}
-                                                <PriceDisplay
-                                                    price={pkg.price * pkg.quantity}
-                                                    className="text-md font-bold text-primary"
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Total Price */}
-                            <div className="bg-white p-4 rounded-lg shadow-sm mt-4 flex justify-between items-center">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Total Amount</p>
-                                    <div className="flex items-center mt-1 text-xs text-gray-500">
-                                        <CheckCircle size={12} className="mr-1" />
-                                        <span>All inclusive</span>
-                                    </div>
-                                </div>
-                                <PriceDisplay
-                                    price={calculateTotalPrice()}
-                                    className="text-2xl font-bold text-primary"
-                                    showOriginal={true}
-                                />
-                            </div>
-                        </motion.div>
 
                         <form onSubmit={handleSubmit}>
                             {/* User Details Card */}
-                            <motion.div
+                            {/* <motion.div
                                 className="mb-6 p-5 rounded-lg border border-gray-200 bg-white"
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -370,100 +312,7 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                                         </p>
                                     </div>
                                 </div>
-                            </motion.div>
-
-                            {/* Traveler Contact Details */}
-                            <motion.div
-                                className="mb-6 p-5 rounded-lg border border-gray-200 bg-white"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3, duration: 0.4 }}
-                            >
-                                <h3 className="font-bold text-primary mb-3 flex items-center">
-                                    <User size={16} className="mr-2" />
-                                    Traveler Contact Details
-                                </h3>
-                                <p className="text-sm text-gray-600 mb-4 flex items-center bg-blue-50 p-2 rounded-lg">
-                                    <Info size={14} className="mr-2 text-blue-500" />
-                                    Please provide contact details for the actual traveler (if different from account holder)
-                                </p>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <div>
-                                        <label htmlFor="travelerName" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Traveler Name
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                id="travelerName"
-                                                type="text"
-                                                name="travelerName"
-                                                value={formData.travelerName}
-                                                onChange={handleInputChange}
-                                                onFocus={() => handleFocus('travelerName')}
-                                                onBlur={() => handleBlur('travelerName')}
-                                                placeholder="Enter traveler's full name"
-                                                className={getInputClass('travelerName')}
-                                                autoComplete="name"
-                                            />
-                                            <User size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="travelerPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Traveler Phone
-                                        </label>
-                                        <div className="relative">
-                                            <PhoneInput
-                                                country={'in'}
-                                                value={formData.travelerPhone}
-                                                onChange={travelerPhone => setFormData(prev => ({ ...prev, travelerPhone }))}
-                                                inputProps={{
-                                                    name: 'travelerPhone',
-                                                    required: false,
-                                                    autoComplete: 'tel',
-                                                    id: 'travelerPhone',
-                                                    onFocus: () => handleFocus('travelerPhone'),
-                                                    onBlur: () => handleBlur('travelerPhone'),
-                                                    placeholder: "Enter traveler's phone number",
-                                                }}
-                                                inputClass={`
-                !w-full  !pl-12 !pr-10 !border !text-base !h-12
-                ${focused['travelerPhone'] ? '!border-primary !shadow-sm' : '!border-gray-300'}
-                !rounded-lg !transition-all !duration-200 
-                focus:!outline-none focus:!border-primary focus:!ring-1 focus:!ring-primary
-                !bg-white !font-normal
-            `}
-                                                buttonClass="!border-none !bg-transparent !h-12 !rounded-l-lg"
-                                                containerClass="!w-full"
-                                                dropdownClass="!bg-white !border !border-gray-300 !rounded-lg !shadow-lg"
-                                            />
-                                            <Phone size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none z-10" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label htmlFor="travelerEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Traveler Email
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            id="travelerEmail"
-                                            type="email"
-                                            name="travelerEmail"
-                                            value={formData.travelerEmail}
-                                            onChange={handleInputChange}
-                                            onFocus={() => handleFocus('travelerEmail')}
-                                            onBlur={() => handleBlur('travelerEmail')}
-                                            placeholder="Enter traveler's email address"
-                                            className={getInputClass('travelerEmail')}
-                                            autoComplete="email"
-                                        />
-                                        <Mail size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
-                                    </div>
-                                </div>
-                            </motion.div>
+                            </motion.div> */}
 
                             {/* Trip Details */}
                             <motion.div
@@ -729,6 +578,158 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                                 </div>
                             </motion.div>
 
+                            {/* Traveler Contact Details */}
+                            <motion.div
+                                className="mb-6 p-5 rounded-lg border border-gray-200 bg-white"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.4 }}
+                            >
+                                <h3 className="font-bold text-primary mb-3 flex items-center">
+                                    <User size={16} className="mr-2" />
+                                    Traveler Contact Details
+                                </h3>
+                                <p className="text-sm text-gray-600 mb-4 flex items-center bg-blue-50 p-2 rounded-lg">
+                                    <Info size={14} className="mr-2 text-blue-500" />
+                                    Please provide contact details for the actual traveler (if different from account holder)
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label htmlFor="travelerName" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Traveler Name
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                id="travelerName"
+                                                type="text"
+                                                name="travelerName"
+                                                value={formData.travelerName}
+                                                onChange={handleInputChange}
+                                                onFocus={() => handleFocus('travelerName')}
+                                                onBlur={() => handleBlur('travelerName')}
+                                                placeholder="Enter traveler's full name"
+                                                className={getInputClass('travelerName')}
+                                                autoComplete="name"
+                                            />
+                                            <User size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="travelerPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Traveler Phone
+                                        </label>
+                                        <div className="relative">
+                                            <PhoneInput
+                                                country={'in'}
+                                                value={formData.travelerPhone}
+                                                onChange={travelerPhone => setFormData(prev => ({ ...prev, travelerPhone }))}
+                                                inputProps={{
+                                                    name: 'travelerPhone',
+                                                    required: false,
+                                                    autoComplete: 'tel',
+                                                    id: 'travelerPhone',
+                                                    onFocus: () => handleFocus('travelerPhone'),
+                                                    onBlur: () => handleBlur('travelerPhone'),
+                                                    placeholder: "Enter traveler's phone number",
+                                                }}
+                                                inputClass={`
+                !w-full  !pl-12 !pr-10 !border !text-base !h-12
+                ${focused['travelerPhone'] ? '!border-primary !shadow-sm' : '!border-gray-300'}
+                !rounded-lg !transition-all !duration-200 
+                focus:!outline-none focus:!border-primary focus:!ring-1 focus:!ring-primary
+                !bg-white !font-normal
+            `}
+                                                buttonClass="!border-none !bg-transparent !h-12 !rounded-l-lg"
+                                                containerClass="!w-full"
+                                                dropdownClass="!bg-white !border !border-gray-300 !rounded-lg !shadow-lg"
+                                            />
+                                            <Phone size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none z-10" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="travelerEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Traveler Email
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            id="travelerEmail"
+                                            type="email"
+                                            name="travelerEmail"
+                                            value={formData.travelerEmail}
+                                            onChange={handleInputChange}
+                                            onFocus={() => handleFocus('travelerEmail')}
+                                            onBlur={() => handleBlur('travelerEmail')}
+                                            placeholder="Enter traveler's email address"
+                                            className={getInputClass('travelerEmail')}
+                                            autoComplete="email"
+                                        />
+                                        <Mail size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Booking Summary Card */}
+                            <motion.div
+                                className="mb-6 bg-gradient-to-r from-primary/5 to-gray-50 p-5 rounded-lg border border-gray-200"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1, duration: 0.4 }}
+                            >
+                                <h3 className="text-primary font-bold text-lg mb-4 flex items-center">
+                                    <CheckCircle size={18} className="mr-2" />
+                                    Booking Summary
+                                </h3>
+
+                                {/* Selected Packages - Read Only */}
+                                <div className="mb-4">
+                                    <p className="text-sm font-medium mb-3 text-gray-700">
+                                        Selected Packages ({selectedPackages.reduce((sum, pkg) => sum + pkg.quantity, 0)} items)
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        {selectedPackages.map((pkg, index) => (
+                                            <div key={`${pkg.model}-${pkg.packageType}-${index}`}
+                                                className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white rounded-md border border-gray-200">
+                                                <div className="mb-2 sm:mb-0">
+                                                    <p className="text-sm"><span className="font-medium">Car:</span> {pkg.model}</p>
+                                                    <p className="text-sm text-gray-700"><span className="font-medium">Package:</span> {formatPackageType(pkg.packageType)}</p>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    {pkg.quantity > 1 && (
+                                                        <span className="mr-3 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                                                            x{pkg.quantity}
+                                                        </span>
+                                                    )}
+                                                    <PriceDisplay
+                                                        price={pkg.price * pkg.quantity}
+                                                        className="text-md font-bold text-primary"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Total Price */}
+                                <div className="bg-white p-4 rounded-lg shadow-sm mt-4 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-500">Total Amount</p>
+                                        <div className="flex items-center mt-1 text-xs text-gray-500">
+                                            <CheckCircle size={12} className="mr-1" />
+                                            <span>All inclusive</span>
+                                        </div>
+                                    </div>
+                                    <PriceDisplay
+                                        price={calculateTotalPrice()}
+                                        className="text-2xl font-bold text-primary"
+                                        showOriginal={true}
+                                    />
+                                </div>
+                            </motion.div>
+
                             {/* Payment Method */}
                             <motion.div
                                 className="mb-6 p-5 rounded-lg border border-gray-200 bg-white"
@@ -741,36 +742,72 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                                     Payment Method
                                 </h3>
 
-                                <div className="p-3 rounded-lg border border-primary bg-primary/5">
-                                    <div className="flex items-start">
-                                        <div className="flex-shrink-0 mt-1">
-                                            <CreditCard size={20} className="text-primary" />
-                                        </div>
-                                        <div className="ml-3 flex-grow">
-                                            <p className="font-medium">Pay via RazorPay</p>
-                                            <p className="text-sm text-gray-600 mb-2">Secure payment processing</p>
-
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                <div className="bg-white px-3 py-1.5 rounded border border-gray-200 text-xs flex items-center font-medium">
-                                                    <span className="text-gray-700 mr-1">UPI</span>
-                                                    <CheckCircle size={12} className="text-green-500" />
+                                <div className="space-y-4">
+                                    {/* Razorpay Option */}
+                                    <label className="flex cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="razorpay"
+                                            checked={formData.paymentMethod === "razorpay"}
+                                            onChange={handleInputChange}
+                                            className="accent-primary mr-3"
+                                        />
+                                        <div className={`p-3 rounded-lg border ${formData.paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-gray-200 bg-white"} flex items-start w-full`}>
+                                            <div className="flex-shrink-0 mt-1">
+                                                <CreditCard size={20} className="text-primary" />
+                                            </div>
+                                            <div className="ml-3 flex-grow">
+                                                <p className="font-medium">Pay via RazorPay</p>
+                                                <p className="text-sm text-gray-600 mb-2">Secure payment processing</p>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    <div className="bg-white px-3 py-1.5 rounded border border-gray-200 text-xs flex items-center font-medium">
+                                                        <span className="text-gray-700 mr-1">UPI</span>
+                                                        <CheckCircle size={12} className="text-green-500" />
+                                                    </div>
+                                                    <div className="bg-white px-3 py-1.5 rounded border border-gray-200 text-xs flex items-center font-medium">
+                                                        <span className="text-gray-700 mr-1">Credit Card</span>
+                                                        <CheckCircle size={12} className="text-green-500" />
+                                                    </div>
+                                                    <div className="bg-white px-3 py-1.5 rounded border border-gray-200 text-xs flex items-center font-medium">
+                                                        <span className="text-gray-700 mr-1">Debit Card</span>
+                                                        <CheckCircle size={12} className="text-green-500" />
+                                                    </div>
                                                 </div>
-                                                <div className="bg-white px-3 py-1.5 rounded border border-gray-200 text-xs flex items-center font-medium">
-                                                    <span className="text-gray-700 mr-1">Credit Card</span>
-                                                    <CheckCircle size={12} className="text-green-500" />
-                                                </div>
-                                                <div className="bg-white px-3 py-1.5 rounded border border-gray-200 text-xs flex items-center font-medium">
-                                                    <span className="text-gray-700 mr-1">Debit Card</span>
-                                                    <CheckCircle size={12} className="text-green-500" />
+                                                <div className="flex items-center gap-1 mt-3">
+                                                    <img src={razorPayImage} alt="RazorPay" className="h-5" />
+                                                    <p className="text-xs text-gray-500 ml-1">Powered by Razorpay</p>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </label>
 
-                                            <div className="flex items-center gap-1 mt-3">
-                                                <img src={razorPayImage} alt="RazorPay" className="h-5" />
-                                                <p className="text-xs text-gray-500 ml-1">Powered by Razorpay</p>
+                                    {/* Cash Option */}
+                                    <label className="flex cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="cash"
+                                            checked={formData.paymentMethod === "cash"}
+                                            onChange={handleInputChange}
+                                            className="accent-primary mr-3"
+                                        />
+                                        <div className={`p-3 rounded-lg border ${formData.paymentMethod === "cash" ? "border-primary bg-primary/5" : "border-gray-200 bg-white"} flex items-start w-full0`}>
+                                            <div className="flex-shrink-0 mt-1">
+                                                <DollarSign size={20} className="text-primary" />
+                                            </div>
+                                            <div className="ml-3 flex-grow">
+                                                <p className="font-medium">Pay via Cash</p>
+                                                <p className="text-sm text-gray-600 mb-2">Pay directly to the driver at pickup</p>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    <div className="bg-white px-3 py-1.5 rounded border border-gray-200 text-xs flex items-center font-medium">
+                                                        <span className="text-gray-700 mr-1">Cash</span>
+                                                        <CheckCircle size={12} className="text-green-500" />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </label>
                                 </div>
                             </motion.div>
 

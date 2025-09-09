@@ -3,7 +3,6 @@ import {
     LogoCloud,
     Features,
     HowItWorks,
-    Testimonials,
     FAQ,
     CTA
 } from '../sections';

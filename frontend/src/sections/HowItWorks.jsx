@@ -177,12 +177,13 @@ const HowItWorks = () => {
                   ))}
                 </ul>
               </div>
-              <Link to={steps[activeStep].ctaLink}>
-                <Button className="flex items-center gap-1">
+
+              <Button>
+                <Link to={steps[activeStep].ctaLink} className="flex items-center gap-1">
                   {steps[activeStep].cta}
                   <ChevronRight size={18} />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
             <motion.div
               className="lg:w-1/2 order-1 lg:order-2"

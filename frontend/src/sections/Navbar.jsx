@@ -91,7 +91,7 @@ const Navbar = () => {
     { name: 'Home', href: '#home', id: 'home' },
     { name: 'Services', href: '#services', id: 'services' },
     { name: 'How It Works', href: '#how-it-works', id: 'how-it-works' },
-    { name: 'Testimonials', href: '/testimonials', id: 'testimonials' },
+    // { name: 'Testimonials', href: '/testimonials', id: 'testimonials' },
     { name: 'FAQ', href: '#faq', id: 'faq' },
     { name: 'Contact', href: '#contact', id: 'contact' },
   ];

@@ -294,7 +294,7 @@ const CabModel = ({ model, carType, capacity, luggage, handbag, image, pricing, 
                                 Wait time for Airport: <span className=" text-primary">{exArrival}</span> on Arrival, <span className="text-primary">{exDeparture}</span> on Departure
                             </motion.p>
 
-                            <details
+                            {/* <details
                                 className="group"
                                 open={featuresOpen}
                                 onToggle={(e) => setFeaturesOpen(e.target.open)}
@@ -333,7 +333,7 @@ const CabModel = ({ model, carType, capacity, luggage, handbag, image, pricing, 
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                            </details>
+                            </details> */}
                         </motion.div>
                     )}
 
@@ -498,7 +498,7 @@ const CabModel = ({ model, carType, capacity, luggage, handbag, image, pricing, 
                                     Wait time for Airport: <span className=" text-primary">{exArrival}</span> on Arrival, <span className="text-primary">{exDeparture}</span> on Departure
                                 </motion.p>
 
-                                <h4 className="text-xs font-semibold text-gray-700">Features:</h4>
+                                {/* <h4 className="text-xs font-semibold text-gray-700">Features:</h4>
                                 <div className="space-x-5 flex flex-wrap">
                                     {features.map((feature, idx) => (
                                         <motion.div
@@ -512,7 +512,7 @@ const CabModel = ({ model, carType, capacity, luggage, handbag, image, pricing, 
                                             <span>{feature}</span>
                                         </motion.div>
                                     ))}
-                                </div>
+                                </div> */}
                             </motion.div>
                         )}
                     </motion.div>
