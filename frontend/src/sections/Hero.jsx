@@ -142,7 +142,7 @@ const HeroSection = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
               >
-                Trusted by 5000+ Clients
+                Trusted by 500+ Clients
               </motion.div>
             </div>
 
