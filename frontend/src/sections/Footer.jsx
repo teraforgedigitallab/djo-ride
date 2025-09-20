@@ -1,8 +1,49 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Facebook, Twitter, Linkedin, Instagram, ChevronRight, CarTaxiFront, ArrowRight } from 'lucide-react';
+import { doc, setDoc, getFirestore } from 'firebase/firestore';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeStatus, setSubscribeStatus] = useState(null); // 'success', 'error', or null
+  const db = getFirestore();
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    
+    // Simple email validation
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      setSubscribeStatus('error');
+      return;
+    }
+    
+    setSubscribing(true);
+    try {
+      // Use email as the document ID
+      await setDoc(doc(db, "newsletter", email), {
+        email: email,
+        subscribedAt: new Date(),
+        // You can add additional fields as needed
+        active: true
+      });
+      
+      setSubscribeStatus('success');
+      setEmail('');
+      
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        setSubscribeStatus(null);
+      }, 3000);
+      
+    } catch (error) {
+      console.error("Error subscribing to newsletter:", error);
+      setSubscribeStatus('error');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   const footerLinks = [
     {
       title: "Quick Links",
@@ -150,18 +191,32 @@ const Footer = () => {
 
             <div className="mt-8 p-5 bg-white/10 rounded-xl">
               <h5 className="text-white font-medium mb-3">Subscribe to our newsletter</h5>
-              <div className="flex overflow-hidden">
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Your email"
-                  autoComplete="email"
-                  className="flex-grow px-4 py-2 bg-white/20 rounded-l-lg text-white placeholder:text-white/50 focus:outline-none w-full"
-                />
-                <button className="bg-accent hover:bg-accent/90 text-white px-4 rounded-r-lg transition-colors duration-300 cursor-pointer">
-                  <ArrowRight size={20} />
-                </button>
-              </div>
+              <form onSubmit={handleSubscribe} className="flex flex-col">
+                <div className="flex overflow-hidden">
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Your email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="flex-grow px-4 py-2 bg-white/20 rounded-l-lg text-white placeholder:text-white/50 focus:outline-none w-full"
+                  />
+                  <button 
+                    type="submit"
+                    disabled={subscribing}
+                    className={`bg-accent hover:bg-accent/90 text-white px-4 rounded-r-lg transition-colors duration-300 cursor-pointer ${subscribing ? 'opacity-70' : ''}`}
+                  >
+                    <ArrowRight size={20} />
+                  </button>
+                </div>
+                {subscribeStatus === 'success' && (
+                  <p className="text-green-400 text-sm mt-2">Successfully subscribed!</p>
+                )}
+                {subscribeStatus === 'error' && (
+                  <p className="text-red-400 text-sm mt-2">Error subscribing. Please try again.</p>
+                )}
+              </form>
             </div>
           </motion.div>
         </div>

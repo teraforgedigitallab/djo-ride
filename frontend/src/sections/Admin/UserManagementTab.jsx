@@ -9,20 +9,20 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
 
     // Filter users based on search query and status filter
     const filteredUsers = users.filter(user => {
-        const matchesSearch = 
-            !searchQuery || 
+        const matchesSearch =
+            !searchQuery ||
             (user.fullName && user.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (user.name && user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (user.phone && user.phone.includes(searchQuery));
-            
-        const matchesStatus = 
-            filterStatus === 'all' || 
+
+        const matchesStatus =
+            filterStatus === 'all' ||
             user.status === filterStatus;
-            
+
         return matchesSearch && matchesStatus;
     });
-    
+
     const openCredentialsModal = (user) => {
         setCredentialsModal({
             isOpen: true,
@@ -53,7 +53,7 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
                             <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
                         </div>
                     </div>
-                    
+
                     <div className="w-full md:w-64">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Filter by Status</label>
                         <select
@@ -67,9 +67,9 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
                             <option value="rejected">Rejected</option>
                         </select>
                     </div>
-                    
+
                     <div className="w-full md:w-auto flex items-end">
-                        <button 
+                        <button
                             onClick={() => {
                                 setSearchQuery('');
                                 setFilterStatus('all');
@@ -82,12 +82,12 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
                     </div>
                 </div>
             </div>
-            
+
             {/* Results Count */}
             <div className="text-sm text-gray-600">
                 Showing {filteredUsers.length} of {users.length} users
             </div>
-            
+
             {/* User Table */}
             <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -128,11 +128,11 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-3 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full 
-                                        ${user.status === 'approved' 
-                                            ? 'bg-green-100 text-green-800' 
-                                            : user.status === 'pending' 
-                                                ? 'bg-yellow-100 text-yellow-800' 
-                                                : 'bg-red-100 text-red-800'}`}>
+                                        ${user.status === 'approved'
+                                                ? 'bg-green-100 text-green-800'
+                                                : user.status === 'pending'
+                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                    : 'bg-red-100 text-red-800'}`}>
                                             {user.status === 'approved' && <CheckCircle size={14} className="mr-1" />}
                                             {user.status === 'pending' && <Clock size={14} className="mr-1" />}
                                             {user.status === 'rejected' && <XCircle size={14} className="mr-1" />}
@@ -148,34 +148,38 @@ const UserManagementTab = ({ users, handlePasswordAssign, updateUserStatus }) =>
                                         <div className="flex flex-wrap gap-2">
                                             {/* Only show one of these buttons based on user state */}
                                             {user.status === 'pending' && (
-                                                <button 
+                                                <button
                                                     onClick={() => handlePasswordAssign(user)}
                                                     className="px-3 py-1 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors flex items-center">
                                                     <UserPlus size={16} className="mr-1" /> Create Account & Approve
                                                 </button>
                                             )}
-                                            
+
                                             {/* Only show reject for non-rejected users */}
                                             {user.status !== 'rejected' && (
-                                                <button 
+                                                <button
                                                     onClick={() => updateUserStatus(user.id, 'rejected')}
                                                     className="px-3 py-1 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors flex items-center">
                                                     <ShieldAlert size={16} className="mr-1" /> Reject
                                                 </button>
                                             )}
-                                            
+
                                             {/* For rejected users, allow re-approving them */}
                                             {user.status === 'rejected' && (
-                                                <button 
-                                                    onClick={() => updateUserStatus(user.id, 'approved')}
+                                                <button
+                                                    onClick={() => user.hasAuthAccount ?
+                                                        updateUserStatus(user.id, 'approved') :
+                                                        handlePasswordAssign(user)
+                                                    }
                                                     className="px-3 py-1 bg-green-50 text-green-600 rounded-md hover:bg-green-100 transition-colors flex items-center">
-                                                    <CheckCircle size={16} className="mr-1" /> Reactivate
+                                                    <CheckCircle size={16} className="mr-1" />
+                                                    {user.hasAuthAccount ? 'Reactivate' : 'Create Account & Approve'}
                                                 </button>
                                             )}
 
                                             {/* Change Email/Password button for approved users with auth accounts */}
                                             {user.status === 'approved' && user.hasAuthAccount && (
-                                                <button 
+                                                <button
                                                     onClick={() => openCredentialsModal(user)}
                                                     className="px-3 py-1 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors flex items-center">
                                                     <Lock size={16} className="mr-1" /> Change Email/Password

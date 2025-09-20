@@ -34,6 +34,23 @@
             ]
         },
         {
+            "model": "Sedan - Luxury",
+            "carType": "Altis",
+            "image": "/images/car-models/SedanLuxury.jpg",
+            "exArrival": "60 Mins",
+            "exDeparture": "15 Mins",
+            "capacity": 4,
+            "luggage": 2,
+            "handbag": 3,
+            "features": [
+                "Climate Control",
+                "Premium Sound System",
+                "Auto Transmission",
+                "Leather Seats",
+                "All Airbags"
+            ]
+        },
+        {
             "model": "MUV",
             "carType": "Ertiga or Similar",
             "image": "/images/car-models/MUV.jpg",
@@ -65,23 +82,6 @@
                 "Auto Transmission",
                 "Multiple Airbags",
                 "Spacious Cabin"
-            ]
-        },
-        {
-            "model": "Sedan - Luxury",
-            "carType": "Altis",
-            "image": "/images/car-models/SedanLuxury.jpg",
-            "exArrival": "60 Mins",
-            "exDeparture": "15 Mins",
-            "capacity": 4,
-            "luggage": 2,
-            "handbag": 3,
-            "features": [
-                "Climate Control",
-                "Premium Sound System",
-                "Auto Transmission",
-                "Leather Seats",
-                "All Airbags"
             ]
         },
         {

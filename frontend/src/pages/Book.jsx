@@ -41,41 +41,149 @@ const Book = () => {
     useEffect(() => {
         const fetchCityPricing = async () => {
             if (selectedCity) {
-                const pricingSnapshot = await getDocs(collection(db, "pricing"));
-                let countryData = null;
-                pricingSnapshot.forEach(doc => {
-                    const docData = doc.data();
-                    if (docData.country === selectedCity.country) countryData = docData;
-                });
-
-                if (countryData && countryData.states && countryData.states.length > 0) {
-                    const cityData = countryData.states.find(item =>
-                        item.city === selectedCity.city && item.state === selectedCity.state
+                try {
+                    console.log("Fetching pricing for:", selectedCity);
+                    // Get the document that matches this city-state-country combination
+                    const pricingQuery = query(
+                        collection(db, "pricing"),
+                        where("cityName", "==", selectedCity.city),
+                        where("stateName", "==", selectedCity.state),
+                        where("countryName", "==", selectedCity.country)
                     );
 
-                    if (cityData && cityData.pricing) {
+                    const pricingSnapshot = await getDocs(pricingQuery);
+
+                    if (!pricingSnapshot.empty) {
+                        const cityDoc = pricingSnapshot.docs[0].data();
+                        console.log("Raw Firebase data:", cityDoc);
+
                         const models = [];
-                        // Use the order from data.categories
-                        data.categories.forEach(category => {
-                            const modelName = category.model;
-                            if (cityData.pricing[modelName]) {
-                                models.push({
-                                    ...category,
-                                    pricing: cityData.pricing[modelName]
-                                });
+
+                        // Get all pricing fields from the document (ending with 'Pricing')
+                        const pricingFields = Object.keys(cityDoc).filter(key =>
+                            key.endsWith('Pricing') && cityDoc[key] !== null
+                        );
+
+                        console.log("Available pricing fields:", pricingFields);
+
+                        // Map to store relationships between Firebase model names and display names
+                        const modelNameMap = {
+                            'SedanPricing': 'Sedan',
+                            'SedanPlusPricing': 'Sedan +',
+                            'SedanLuxuryPricing': 'Sedan - Luxury',
+                            'MUVPricing': 'MUV',
+                            'SUVPricing': 'SUV',
+                            'SUVPlusPricing': 'SUV +',
+                            'LuxuryPricing': 'Luxury',
+                            'LuxuryPlusPricing': 'Luxury +'
+                        };
+
+                        // Process each pricing field
+                        pricingFields.forEach(pricingField => {
+                            // Skip if pricing object is null
+                            if (!cityDoc[pricingField]) return;
+
+                            // Map Firebase rate fields to the expected format in the app
+                            const pricing = {
+                                '4hr40km': cityDoc[pricingField]['4H-40kmRate'] || 0,
+                                '8hr80km': cityDoc[pricingField]['8H-80kmRate'] || 0,
+                                'airport': cityDoc[pricingField]['AirportRate'] || 0
+                            };
+
+                            // Check if at least one price is greater than 0
+                            const hasNonZeroPricing = Object.values(pricing).some(price => price > 0);
+
+                            // Only add models with non-zero pricing
+                            if (hasNonZeroPricing) {
+                                // Get the display model name from our mapping
+                                const displayModelName = modelNameMap[pricingField];
+
+                                // Find matching category from data.json
+                                const category = data.categories.find(cat => cat.model === displayModelName);
+
+                                if (category) {
+                                    // Use category data from data.json
+                                    models.push({
+                                        ...category,
+                                        pricing: pricing
+                                    });
+                                } else {
+                                    // Create a minimal model if no matching category found
+                                    let modelName = displayModelName || pricingField.replace('Pricing', '');
+
+                                    // Get default image based on the model type
+                                    let image = '';
+                                    let capacity = 4;
+                                    let luggage = 2;
+                                    let handbag = 2;
+
+                                    if (modelName.includes('Sedan')) {
+                                        image = '/images/car-models/Sedan.jpg';
+                                    } else if (modelName.includes('SUV')) {
+                                        image = '/images/car-models/SUV.jpg';
+                                        capacity = 6;
+                                        luggage = 4;
+                                        handbag = 4;
+                                    } else if (modelName.includes('MUV')) {
+                                        image = '/images/car-models/MUV.jpg';
+                                        capacity = 6;
+                                        luggage = 3;
+                                        handbag = 3;
+                                    } else if (modelName.includes('Luxury')) {
+                                        image = '/images/car-models/Luxury.jpg';
+                                    }
+
+                                    models.push({
+                                        model: modelName,
+                                        carType: modelName,
+                                        capacity: capacity,
+                                        luggage: luggage,
+                                        handbag: handbag,
+                                        image: image,
+                                        features: [],
+                                        exArrival: "60 Mins",
+                                        exDeparture: "15 Mins",
+                                        pricing: pricing
+                                    });
+                                }
                             }
                         });
+
+                        // Sort models in a logical order
+                        const modelOrder = {
+                            'Sedan': 1,
+                            'Sedan +': 2,
+                            'Sedan - Luxury': 3,
+                            'MUV': 6,
+                            'SUV': 4,
+                            'SUV +': 5,
+                            'Luxury': 7,
+                            'Luxury +': 8
+                        };
+
+                        models.sort((a, b) => {
+                            const orderA = modelOrder[a.model] || 999;
+                            const orderB = modelOrder[b.model] || 999;
+                            return orderA - orderB;
+                        });
+
+                        console.log("Final processed models:", models);
                         setAvailableModels(models);
                     } else {
+                        // No pricing found for this city
+                        console.log("No pricing data found for this city");
                         setAvailableModels([]);
                     }
-                } else {
+                } catch (error) {
+                    console.error("Error fetching pricing data:", error);
                     setAvailableModels([]);
                 }
             }
         };
+
         fetchCityPricing();
     }, [selectedCity, db]);
+
     const handleCitySelect = (city) => {
         setSelectedCity(city);
         setSelectedPackages([]);

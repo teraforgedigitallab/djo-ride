@@ -1,96 +1,129 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { toast } from 'react-hot-toast';
-import { Image, Search, X, Save, Globe, MapPin, AlertCircle, ChevronDown } from 'lucide-react';
+import { Image, Search, X, Save, Globe, MapPin, AlertCircle, ChevronDown, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../../components/Button';
-import InputField from '../../components/InputField';
 
 const CityImageManagementTab = () => {
-    // State for countries, cities, and UI
+    // States for data management
     const [countries, setCountries] = useState([]);
     const [selectedCountry, setSelectedCountry] = useState(null);
+    const [states, setStates] = useState([]);
     const [cities, setCities] = useState([]);
+    const [imageUrls, setImageUrls] = useState({});
+    
+    // UI states
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [stateFilter, setStateFilter] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
-    const [imageUrls, setImageUrls] = useState({});
+    const [stateFilter, setStateFilter] = useState("");
     const [previewUrl, setPreviewUrl] = useState(null);
     const [previewCity, setPreviewCity] = useState(null);
 
-    // Fetch countries from Firestore
+    // Fetch unique countries from pricing collection
     useEffect(() => {
         const fetchCountries = async () => {
             setLoading(true);
             setError(null);
             try {
                 const pricingSnapshot = await getDocs(collection(db, "pricing"));
-                const countriesData = pricingSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    country: doc.data().country
-                }));
-                setCountries(countriesData);
+                
+                // Extract unique countries
+                const countriesMap = new Map();
+                pricingSnapshot.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.countryName && !countriesMap.has(data.countryName)) {
+                        countriesMap.set(data.countryName, {
+                            name: data.countryName
+                        });
+                    }
+                });
+                
+                setCountries(Array.from(countriesMap.values()));
             } catch (error) {
-                console.error("Failed to fetch countries:", error);
+                console.error("Error fetching countries:", error);
                 setError("Failed to load countries. Please try again.");
                 toast.error("Failed to load countries");
             } finally {
                 setLoading(false);
             }
         };
-
+        
         fetchCountries();
     }, []);
 
-    // Fetch cities when a country is selected
+    // Fetch states when country is selected
     useEffect(() => {
         if (!selectedCountry) {
+            setStates([]);
             setCities([]);
             return;
         }
-
-        const fetchCities = async () => {
+        
+        const fetchStates = async () => {
             setLoading(true);
             setError(null);
             try {
-                const countryDoc = await getDoc(doc(db, "pricing", selectedCountry.id));
-                if (countryDoc.exists()) {
-                    const data = countryDoc.data();
-                    const citiesData = data.states || [];
-                    const cityMap = new Map();
-
-                    // Group by city name only
-                    citiesData.forEach(city => {
-                        const cityName = city.name;
-                        if (!cityName) return;
-                        if (!cityMap.has(cityName)) {
-                            cityMap.set(cityName, {
-                                name: cityName,
-                                imgUrl: city.imgUrl || ''
+                const statesQuery = query(
+                    collection(db, "pricing"), 
+                    where("countryName", "==", selectedCountry.name)
+                );
+                
+                const statesSnapshot = await getDocs(statesQuery);
+                
+                // Extract unique states
+                const statesMap = new Map();
+                statesSnapshot.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.stateName && !statesMap.has(data.stateName)) {
+                        statesMap.set(data.stateName, {
+                            name: data.stateName
+                        });
+                    }
+                });
+                
+                setStates(Array.from(statesMap.values()));
+                
+                // Fetch all cities for this country
+                const citiesData = [];
+                const imageUrlsData = {};
+                
+                statesSnapshot.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.cityName && data.stateName) {
+                        const cityKey = `${data.stateName}-${data.cityName}`;
+                        
+                        if (!citiesData.some(city => 
+                            city.name === data.cityName && city.state === data.stateName)) {
+                            
+                            citiesData.push({
+                                name: data.cityName,
+                                state: data.stateName,
+                                docId: docSnap.id,
+                                imageUrl: data.imageUrl || ''
                             });
+                            
+                            // Store image URLs
+                            imageUrlsData[cityKey] = data.imageUrl || '';
                         }
-                    });
-
-                    const uniqueCities = Array.from(cityMap.values());
-                    const initialImageUrls = {};
-                    uniqueCities.forEach(city => {
-                        initialImageUrls[city.name] = city.imgUrl || '';
-                    });
-
-                    setImageUrls(initialImageUrls);
-                    setCities(uniqueCities);
-                }
+                    }
+                });
+                
+                setCities(citiesData);
+                setImageUrls(imageUrlsData);
+                
             } catch (error) {
-                setError("Failed to load cities. Please try again.");
-                toast.error("Failed to load cities");
+                console.error("Error fetching states:", error);
+                setError("Failed to load states. Please try again.");
+                toast.error("Failed to load states");
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchCities();
+        
+        fetchStates();
         setStateFilter("");
         setSearchTerm("");
     }, [selectedCountry]);
@@ -104,53 +137,41 @@ const CityImageManagementTab = () => {
         }));
     };
 
-    // Save image URL to Firestore - now updates all entries for the same city
-    const saveImageUrl = async (cityName) => {
+    // Save image URL to Firestore
+    const saveImageUrl = async (cityName, state, docId) => {
         if (!selectedCountry) {
             toast.error("No country selected");
             return;
         }
+        
         if (!cityName) {
             setError("City name is required");
             toast.error("City name is required");
             return;
         }
-        const imageUrl = imageUrls[cityName];
-        if (!imageUrl) {
-            toast.warning("No image URL provided");
-            return;
-        }
+        
+        const cityKey = `${state}-${cityName}`;
+        const imageUrl = imageUrls[cityKey];
+        
         setLoading(true);
         setError(null);
 
         try {
-            const countryDocRef = doc(db, "pricing", selectedCountry.id);
-            const countryDoc = await getDoc(countryDocRef);
-            if (countryDoc.exists()) {
-                const data = countryDoc.data();
-                // Update imgUrl for all entries with the same city name
-                const updatedStates = (data.states || []).map(city => {
-                    if (city.name === cityName) {
-                        return { ...city, imgUrl: imageUrl };
-                    }
-                    return city;
-                });
-                await updateDoc(countryDocRef, { states: updatedStates });
-
-                // Also update cityImages collection for normalized access
-                const cityImagesRef = doc(db, "cityImages", selectedCountry.id);
-                const cityImagesDoc = await getDoc(cityImagesRef);
-                let cityImagesData = cityImagesDoc.exists() ? cityImagesDoc.data() : { cities: {} };
-                if (!cityImagesData.cities) cityImagesData.cities = {};
-                cityImagesData.cities[cityName] = {
-                    name: cityName,
-                    imgUrl: imageUrl
-                };
-                await setDoc(cityImagesRef, cityImagesData);
-
-                toast.success(`Image URL updated for ${cityName}`);
-            }
+            // Update the pricing document with the image URL
+            const pricingDocRef = doc(db, "pricing", docId);
+            await updateDoc(pricingDocRef, { imageUrl: imageUrl });
+            
+            toast.success(`Image URL updated for ${cityName}`);
+            
+            // Update local state to reflect changes
+            setCities(cities.map(city => 
+                city.name === cityName && city.state === state
+                    ? { ...city, imageUrl }
+                    : city
+            ));
+            
         } catch (error) {
+            console.error("Error updating image URL:", error);
             setError(`Failed to update image URL for ${cityName}. Error: ${error.message}`);
             toast.error(`Failed to update image URL for ${cityName}`);
         } finally {
@@ -159,11 +180,12 @@ const CityImageManagementTab = () => {
     };
 
     // Show image preview
-    const showPreview = (cityName) => {
-        const url = imageUrls[cityName];
+    const showPreview = (cityName, state) => {
+        const cityKey = `${state}-${cityName}`;
+        const url = imageUrls[cityKey];
         if (url) {
             setPreviewUrl(url);
-            setPreviewCity({ name: cityName });
+            setPreviewCity({ name: cityName, state });
         } else {
             toast.error("No image URL to preview");
         }
@@ -287,23 +309,26 @@ const CityImageManagementTab = () => {
                     className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
                     variants={containerVariants}
                 >
-                    {countries.map(country => (
+                    {countries.map((country, index) => (
                         <motion.div
-                            key={country.id}
+                            key={index}
                             tabIndex={0}
                             role="button"
-                            aria-pressed={selectedCountry?.id === country.id}
+                            aria-pressed={selectedCountry?.name === country.name}
                             onClick={() => setSelectedCountry(country)}
                             onKeyDown={e => (e.key === "Enter" || e.key === " ") && setSelectedCountry(country)}
-                            className={`p-3 rounded-md cursor-pointer transition-all flex items-center justify-between outline-none ring-offset-2 focus:ring-2 focus:ring-primary ${selectedCountry?.id === country.id
+                            className={`p-3 rounded-md cursor-pointer transition-all flex items-center justify-between outline-none ring-offset-2 focus:ring-2 focus:ring-primary ${selectedCountry?.name === country.name
                                 ? "bg-primary text-white shadow-md"
-                                : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                                : "bg-white hover:bg-gray-200 text-gray-800"
                                 }`}
                             variants={itemVariants}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            <span className="font-medium truncate">{country.country}</span>
+                            <span className="font-medium truncate">
+                                {country.name}
+                                </span>
+                            
                         </motion.div>
                     ))}
                 </motion.div>
@@ -322,7 +347,7 @@ const CityImageManagementTab = () => {
                     >
                         <h3 className="text-xl font-semibold text-primary mb-4 flex items-center">
                             <MapPin className="mr-2" size={20} />
-                            City Images for {selectedCountry.country}
+                            City Images for {selectedCountry.name}
                         </h3>
 
                         {/* Filters */}
@@ -397,7 +422,6 @@ const CityImageManagementTab = () => {
                                             <tbody className="bg-white divide-y divide-gray-200">
                                                 {stateCities.map((city, index) => {
                                                     const cityKey = `${city.state}-${city.name}`;
-
                                                     return (
                                                         <tr key={`${city.name}-${index}`} className="hover:bg-gray-50">
                                                             <td className="px-6 py-4 whitespace-nowrap font-medium">
@@ -416,19 +440,18 @@ const CityImageManagementTab = () => {
                                                             <td className="px-6 py-4 whitespace-nowrap">
                                                                 <div className="flex gap-2">
                                                                     <Button
-                                                                        onClick={() => saveImageUrl(city.name)}
+                                                                        onClick={() => saveImageUrl(city.name, city.state, city.docId)}
                                                                         className="bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/90 flex items-center"
-                                                                        disabled={loading}
+                                                                        disabled={loading || !imageUrls[cityKey]}
                                                                     >
                                                                         <Save size={14} className="mr-1" /> Save
                                                                     </Button>
-
                                                                     <Button
-                                                                        onClick={() => showPreview(city.name)}
+                                                                        onClick={() => showPreview(city.name, city.state)}
                                                                         className="bg-accent/20 text-accent px-3 py-1.5 rounded-md hover:bg-accent/30 flex items-center"
                                                                         disabled={loading || !imageUrls[cityKey]}
                                                                     >
-                                                                        <Image size={14} className="mr-1" /> Preview
+                                                                        <Eye size={14} className="mr-1" /> Preview
                                                                     </Button>
                                                                 </div>
                                                             </td>
@@ -481,7 +504,6 @@ const CityImageManagementTab = () => {
                                     <X size={20} />
                                 </button>
                             </div>
-
                             <div className="overflow-auto flex-1 flex items-center justify-center bg-gray-100 rounded-lg">
                                 <img
                                     src={previewUrl}
@@ -493,7 +515,6 @@ const CityImageManagementTab = () => {
                                     }}
                                 />
                             </div>
-
                             <div className="mt-4 text-sm text-gray-500 break-all">
                                 <p>URL: {previewUrl}</p>
                             </div>

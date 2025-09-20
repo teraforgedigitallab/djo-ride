@@ -1,191 +1,480 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, getDocs, doc, updateDoc, setDoc, getDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import {
+    collection,
+    doc,
+    setDoc,
+    updateDoc,
+    getDoc,
+    getDocs,
+    deleteDoc,
+    query,
+    where,
+    arrayUnion,
+    arrayRemove,
+    writeBatch
+} from 'firebase/firestore';
+import { Country, State, City } from 'country-state-city';
 import { toast } from 'react-toastify';
-import { useAuth } from '../../contexts/AuthContext';
-import { DollarSign, PlusCircle, Trash2, MapPin, Globe, Car, X, AlertCircle, ChevronDown, Upload } from 'lucide-react';
+import { DollarSign, PlusCircle, Trash2, MapPin, Globe, Car, X, AlertCircle, FileUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import BulkImportPricing from '../../components/BulkImportPricing';
-import BulkPricingUpdate from '../../components/BulkPricingUpdate';
+import PricingExcelUploader from '../../components/PricingExcelUploader';
 import Button from '../../components/Button';
 
 const DEFAULT_CAB_MODELS = [
-    "Sedan", "Sedan +", "Sedan - Luxury", "MUV", "SUV", "SUV +", "Luxury", "Luxury +"
+    "Sedan",
+    "Sedan +",
+    "Sedan Luxury",
+    "MUV",
+    "SUV",
+    "SUV +",
+    "Luxury",
+    "Luxury +"
 ];
 
+// Utility to generate doc ID
+const getPricingDocId = (city, state, country) =>
+    `${city} - ${state} - ${country}`;
+
+// Add a country to Countries collection
+const addCountry = async (countryName) => {
+    await setDoc(doc(db, "Countries", countryName), {
+        countryName,
+        states: []
+    });
+};
+
+// Add a state to a country in Countries collection
+const addStateToCountry = async (countryName, stateName) => {
+    const countryRef = doc(db, "Countries", countryName);
+    await updateDoc(countryRef, {
+        states: arrayUnion(stateName)
+    });
+};
+
+// Remove a state from a country in Countries collection
+const removeStateFromCountry = async (countryName, stateName) => {
+    const countryRef = doc(db, "Countries", countryName);
+    await updateDoc(countryRef, {
+        states: arrayRemove(stateName)
+    });
+};
+
+// Delete a country document from Countries collection
+const deleteCountryDoc = async (countryName) => {
+    await deleteDoc(doc(db, "Countries", countryName));
+};
+
+// Add a city pricing document (requires all pricing fields)
+const addCityPricing = async ({
+    countryName,
+    stateName,
+    cityName,
+    pricingData // { Sedan: {...}, SUV: {...}, ... }
+}) => {
+    const docId = getPricingDocId(cityName, stateName, countryName);
+    await setDoc(doc(db, "pricing", docId), {
+        countryName,
+        stateName,
+        cityName,
+        ...pricingData // Each category as described, null if removed
+    });
+};
+
+// Remove a category for a city (sets value to null)
+const removeCategoryFromCityPricing = async ({
+    countryName,
+    stateName,
+    cityName,
+    categoryKey
+}) => {
+    const docId = getPricingDocId(cityName, stateName, countryName);
+    await updateDoc(doc(db, "pricing", docId), {
+        [categoryKey]: null
+    });
+};
+
+// Bulk delete pricing docs by field
+const bulkDeletePricingByField = async (field, value) => {
+    const q = query(collection(db, "pricing"), where(field, "==", value));
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(db);
+    snapshot.forEach(docSnap => batch.delete(docSnap.ref));
+    await batch.commit();
+};
+
+const Dropdown = ({ label, value, options, onChange, disabled, icon, placeholder }) => (
+    <div className="flex flex-col flex-1 min-w-[180px]">
+        <label className="block text-sm font-medium text-primary mb-1">{label}</label>
+        <div className="relative">
+            <select
+                value={value}
+                onChange={onChange}
+                disabled={disabled}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none ${disabled ? 'bg-gray-100' : 'bg-white'}`}
+                aria-label={label}
+            >
+                <option value="">{placeholder}</option>
+                {options.length === 0 && <option disabled>No options</option>}
+                {options.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+            </select>
+            {icon && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-primary">{icon}</span>}
+        </div>
+    </div>
+);
+
 const PricingManagementTab = () => {
-    // State
-    const [countries, setCountries] = useState([]);
+    // Dropdown states
+    const [countryIso, setCountryIso] = useState("");
+    const [stateIso, setStateIso] = useState("");
+    const [cityName, setCityName] = useState("");
+
+    // Pricing input states
+    const [pricingInputs, setPricingInputs] = useState({});
     const [selectedCountry, setSelectedCountry] = useState(null);
+    const [selectedState, setSelectedState] = useState(null);
+
+    // Data states
+    const [countries, setCountries] = useState([]);
+    const [states, setStates] = useState([]);
     const [cities, setCities] = useState([]);
-    const [editingCity, setEditingCity] = useState(null);
-    const [pricing, setPricing] = useState({});
-    const [pricingHistory, setPricingHistory] = useState([]);
-    const [historyIndex, setHistoryIndex] = useState(-1);
+    const [pricingDocs, setPricingDocs] = useState([]);
+    const [editingCityDoc, setEditingCityDoc] = useState(null);
+
+    // UI states
     const [loading, setLoading] = useState(false);
-    const [newCountry, setNewCountry] = useState("");
-    const [newCityData, setNewCityData] = useState({ state: "", city: "" });
-    const [cabModels, setCabModels] = useState(DEFAULT_CAB_MODELS);
-    const [newCabModel, setNewCabModel] = useState("");
-    const [stateFilter, setStateFilter] = useState("");
-    const [cabModelOrder, setCabModelOrder] = useState(DEFAULT_CAB_MODELS);
     const [error, setError] = useState(null);
 
-    const [isGlobalUpdateOpen, setIsGlobalUpdateOpen] = useState(false);
-    const [isCountryUpdateOpen, setIsCountryUpdateOpen] = useState(false);
-    const [isCityUpdateOpen, setIsCityUpdateOpen] = useState(false);
-    const [updateLoading, setUpdateLoading] = useState(false);
+    //Excel Uploader Modal
+    const [showExcelUploader, setShowExcelUploader] = useState(false);
 
-    // Refs for scrolling and focus management
-    const pricingEditorRef = useRef(null);
-    const cityRowRefs = useRef({});
+    // For dropdown options
+    const countryOptions = Country.getAllCountries().map(c => ({
+        value: c.isoCode,
+        label: c.name
+    }));
+    const stateOptions = states.map(s => ({
+        value: s.isoCode,
+        label: s.name
+    }));
+    const cityOptions = cities.map(c => ({
+        value: c.name,
+        label: c.name
+    }));
 
-    const { user } = useAuth();
-
-    // Define fetchCountriesAndCities at component level
-    const fetchCountriesAndCities = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            // Fetch countries
-            const pricingSnapshot = await getDocs(collection(db, "pricing"));
-            const countriesData = pricingSnapshot.docs.map(doc => ({
-                id: doc.id,
-                country: doc.data().country,
-                cabModelOrder: doc.data().cabModelOrder || DEFAULT_CAB_MODELS
-            }));
-            setCountries(countriesData);
-
-            // If a country is selected, fetch its cities
-            if (selectedCountry) {
-                const countryDoc = await getDoc(doc(db, "pricing", selectedCountry.id));
-                if (countryDoc.exists()) {
-                    const data = countryDoc.data();
-                    setCities(data.states || []);
-                    setCabModelOrder(data.cabModelOrder || DEFAULT_CAB_MODELS);
-                }
+    // Fetch countries from Countries collection
+    useEffect(() => {
+        const fetchCountries = async () => {
+            setLoading(true);
+            try {
+                const snapshot = await getDocs(collection(db, "Countries"));
+                const countryList = snapshot.docs.map(doc => doc.data());
+                setCountries(countryList);
+            } catch (err) {
+                setError("Failed to load countries");
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Failed to fetch data:", error);
-            setError("Failed to load data. Please try again.");
-            toast.error("Failed to load data");
+        };
+        fetchCountries();
+    }, []);
+
+    // Fetch states when country changes
+    useEffect(() => {
+        if (!countryIso) {
+            setStates([]);
+            setSelectedCountry(null);
+            return;
+        }
+        const countryObj = Country.getCountryByCode(countryIso);
+        setSelectedCountry(countryObj);
+        const statesList = State.getStatesOfCountry(countryIso);
+        setStates(statesList);
+    }, [countryIso]);
+
+    // Fetch cities when state changes
+    useEffect(() => {
+        if (!countryIso || !stateIso) {
+            setCities([]);
+            setSelectedState(null);
+            return;
+        }
+        const stateObj = State.getStateByCodeAndCountry(stateIso, countryIso);
+        setSelectedState(stateObj);
+        const citiesList = City.getCitiesOfState(countryIso, stateIso);
+        setCities(citiesList);
+    }, [countryIso, stateIso]);
+
+    // Fetch pricing docs for selected state
+    useEffect(() => {
+        const fetchPricingDocs = async () => {
+            if (!selectedState) {
+                setPricingDocs([]);
+                return;
+            }
+            setLoading(true);
+            try {
+                const q = query(collection(db, "pricing"), where("stateName", "==", selectedState.name));
+                const snapshot = await getDocs(q);
+                setPricingDocs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            } catch (err) {
+                setError("Failed to load pricing");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPricingDocs();
+    }, [selectedState]);
+
+    // Add country handler
+    const handleAddCountry = async () => {
+        if (!countryIso) {
+            toast.error("Select a country");
+            return;
+        }
+        setLoading(true);
+        try {
+            const countryObj = Country.getCountryByCode(countryIso);
+            await addCountry(countryObj.name);
+            toast.success("Country added");
+            setCountries([...countries, { countryName: countryObj.name, states: [] }]);
+        } catch (err) {
+            toast.error("Failed to add country");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleBulkUpdate = async (pricingData, updateType) => {
-        setUpdateLoading(true);
-        setError(null);
-
+    // Add state handler
+    const handleAddState = async () => {
+        if (!countryIso || !stateIso) {
+            toast.error("Select country and state");
+            return;
+        }
+        setLoading(true);
         try {
-            // Validate user authentication
-            if (!user) {
-                throw new Error('User not authenticated');
-            }
-
-            // Get authentication token
-            const idToken = await user.getIdToken();
-
-            console.log("Bulk update data:", pricingData); // Debug logging
-
-            if (!pricingData || pricingData.length === 0) {
-                throw new Error('No pricing data provided');
-            }
-
-            // Process each pricing data item
-            let updatedCount = 0;
-            for (const item of pricingData) {
-                // Skip any items with missing required fields
-                if (!item.country || !item.city || !item.cabModel) {
-                    console.warn("Skipping item with missing data:", item);
-                    continue;
-                }
-
-                try {
-                    // Find the country document in your countries array
-                    const countryObj = countries.find(c => c.country === item.country);
-
-                    if (!countryObj) {
-                        console.warn(`Country not found: ${item.country}`);
-                        continue;
-                    }
-
-                    // Get document reference directly using ID
-                    const countryDocRef = doc(db, "pricing", countryObj.id);
-                    const countryDoc = await getDoc(countryDocRef);
-
-                    if (!countryDoc.exists()) {
-                        console.warn(`Country document not found: ${item.country}`);
-                        continue;
-                    }
-
-                    // Update the city pricing in the states array
-                    const data = countryDoc.data();
-                    const states = data.states || [];
-
-                    // Find the city to update
-                    const cityIndex = states.findIndex(
-                        state => state.city.toLowerCase() === item.city.toLowerCase()
-                    );
-
-                    if (cityIndex >= 0) {
-                        // Update city pricing
-                        const updatedStates = [...states];
-                        const cityData = updatedStates[cityIndex];
-
-                        // Make sure pricing and cab model exist
-                        if (!cityData.pricing) cityData.pricing = {};
-                        if (!cityData.pricing[item.cabModel]) cityData.pricing[item.cabModel] = {};
-
-                        // Update the rates
-                        cityData.pricing[item.cabModel]["4hr40km"] = Number(item.fourHrRate);
-                        cityData.pricing[item.cabModel]["8hr80km"] = Number(item.eightHrRate);
-                        cityData.pricing[item.cabModel]["airport"] = Number(item.airportRate);
-
-                        // Update the document
-                        await updateDoc(countryDocRef, { states: updatedStates });
-                        updatedCount++;
-                    } else {
-                        console.warn(`City not found: ${item.city} in ${item.country}`);
-                    }
-                } catch (itemError) {
-                    console.error(`Error updating item: ${item.country}/${item.city}/${item.cabModel}`, itemError);
-                }
-            }
-
-            // Close the modal based on update type
-            switch (updateType) {
-                case 'global':
-                    setIsGlobalUpdateOpen(false);
-                    break;
-                case 'country':
-                    setIsCountryUpdateOpen(false);
-                    break;
-                case 'city':
-                    setIsCityUpdateOpen(false);
-                    break;
-            }
-
-            // Show success message
-            if (updatedCount > 0) {
-                toast.success(`Successfully updated ${updatedCount} pricing entries`);
-            } else {
-                toast.warning("No pricing entries were updated. Please check your data.");
-            }
-
-            // Refresh the current data
-            fetchCountriesAndCities();
-        } catch (error) {
-            console.error('Error updating pricing:', error);
-            setError(`Failed to update pricing: ${error.message}`);
-            toast.error(`Failed to update pricing: ${error.message}`);
+            const countryObj = Country.getCountryByCode(countryIso);
+            const stateObj = State.getStateByCodeAndCountry(stateIso, countryIso);
+            await addStateToCountry(countryObj.name, stateObj.name);
+            toast.success("State added");
+            // Update countries state
+            setCountries(countries.map(c =>
+                c.countryName === countryObj.name
+                    ? { ...c, states: [...(c.states || []), stateObj.name] }
+                    : c
+            ));
+        } catch (err) {
+            toast.error("Failed to add state");
         } finally {
-            setUpdateLoading(false);
+            setLoading(false);
         }
     };
 
-    // Animation variants
+    // Add city handler (requires pricing)
+    const handleAddCity = async () => {
+        if (!countryIso || !stateIso || !cityName) {
+            toast.error("Select country, state, and city");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const countryObj = Country.getCountryByCode(countryIso);
+            const stateObj = State.getStateByCodeAndCountry(stateIso, countryIso);
+
+            // Prepare pricing data
+            const pricingData = {};
+
+            // Define field name generator function
+            const getFieldName = (model) => {
+                // Handle special characters properly
+                return model.replace(/\s+/g, '').replace(/\+/g, 'Plus') + 'Pricing';
+            };
+
+            // Populate pricing data - default empty values to 0
+            DEFAULT_CAB_MODELS.forEach(model => {
+                const inputs = pricingInputs[model] || {};
+                pricingData[getFieldName(model)] = {
+                    "4H-40kmRate": Number(inputs["4H-40kmRate"] || 0),
+                    "8H-80kmRate": Number(inputs["8H-80kmRate"] || 0),
+                    "AirportRate": Number(inputs["AirportRate"] || 0)
+                };
+            });
+
+            await addCityPricing({
+                countryName: countryObj.name,
+                stateName: stateObj.name,
+                cityName,
+                pricingData
+            });
+            toast.success("City pricing added");
+            setPricingInputs({});
+            setCityName("");
+            // Refresh pricing docs
+            const q = query(collection(db, "pricing"), where("stateName", "==", stateObj.name));
+            const snapshot = await getDocs(q);
+            setPricingDocs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        } catch (err) {
+            toast.error("Failed to add city pricing");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Remove city handler
+    const handleDeleteCity = async (cityDoc) => {
+        if (!window.confirm(`Delete city "${cityDoc.cityName}" and its pricing?`)) return;
+        setLoading(true);
+        try {
+            await bulkDeletePricingByField("cityName", cityDoc.cityName);
+            toast.success("City deleted");
+            setPricingDocs(pricingDocs.filter(doc => doc.cityName !== cityDoc.cityName));
+        } catch (err) {
+            toast.error("Failed to delete city");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Remove state handler
+    const handleDeleteState = async () => {
+        if (!selectedCountry || !selectedState) return;
+        if (!window.confirm(`Delete state "${selectedState.name}" and all its cities?`)) return;
+        setLoading(true);
+        try {
+            await bulkDeletePricingByField("stateName", selectedState.name);
+            await removeStateFromCountry(selectedCountry.name, selectedState.name);
+            toast.success("State deleted");
+            setPricingDocs([]);
+            setStateIso("");
+        } catch (err) {
+            toast.error("Failed to delete state");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Remove country handler
+    const handleDeleteCountry = async () => {
+        if (!selectedCountry) return;
+        if (!window.confirm(`Delete country "${selectedCountry.name}" and all its states and cities?`)) return;
+        setLoading(true);
+        try {
+            await bulkDeletePricingByField("countryName", selectedCountry.name);
+            await deleteCountryDoc(selectedCountry.name);
+            toast.success("Country deleted");
+            setCountries(countries.filter(c => c.countryName !== selectedCountry.name));
+            setCountryIso("");
+            setStateIso("");
+            setCities([]);
+            setPricingDocs([]);
+        } catch (err) {
+            toast.error("Failed to delete country");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Remove category handler (sets value to null)
+    const handleRemoveCategory = async (cityDoc, categoryKey) => {
+        if (!window.confirm(`Remove category "${categoryKey.replace('Pricing', '')}" for city "${cityDoc.cityName}"?`)) return;
+        setLoading(true);
+        try {
+            await removeCategoryFromCityPricing({
+                countryName: cityDoc.countryName,
+                stateName: cityDoc.stateName,
+                cityName: cityDoc.cityName,
+                categoryKey
+            });
+            toast.success("Category removed");
+            // Refresh pricing doc
+            const q = query(collection(db, "pricing"), where("cityName", "==", cityDoc.cityName));
+            const snapshot = await getDocs(q);
+            setPricingDocs(pricingDocs.map(doc =>
+                doc.cityName === cityDoc.cityName
+                    ? { ...doc, [categoryKey]: null }
+                    : doc
+            ));
+        } catch (err) {
+            toast.error("Failed to remove category");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Pricing input change handler
+    const handlePricingInputChange = (model, field, value) => {
+        setPricingInputs(prev => ({
+            ...prev,
+            [model]: {
+                ...prev[model],
+                [field]: value
+            }
+        }));
+    };
+
+    const handleExcelUploaderSuccess = async () => {
+        // Refresh the pricing docs after successful upload
+        if (selectedState) {
+            setLoading(true);
+            try {
+                const q = query(collection(db, "pricing"), where("stateName", "==", selectedState.name));
+                const snapshot = await getDocs(q);
+                setPricingDocs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            } catch (err) {
+                setError("Failed to refresh pricing data");
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    // 2. Add effect to load existing city data when selected
+    useEffect(() => {
+        const loadExistingPricing = async () => {
+            if (!countryIso || !stateIso || !cityName) return;
+
+            const countryObj = Country.getCountryByCode(countryIso);
+            const stateObj = State.getStateByCodeAndCountry(stateIso, countryIso);
+
+            try {
+                setLoading(true);
+                const docId = getPricingDocId(cityName, stateObj.name, countryObj.name);
+                const docSnap = await getDoc(doc(db, "pricing", docId));
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const newPricingInputs = {};
+
+                    DEFAULT_CAB_MODELS.forEach(model => {
+                        const fieldName = model.replace(/\s+/g, '').replace(/\+/g, 'Plus') + 'Pricing';
+                        const pricingData = data[fieldName] || {};
+
+                        newPricingInputs[model] = {
+                            "4H-40kmRate": pricingData["4H-40kmRate"] || 0,
+                            "8H-80kmRate": pricingData["8H-80kmRate"] || 0,
+                            "AirportRate": pricingData["AirportRate"] || 0
+                        };
+                    });
+
+                    setPricingInputs(newPricingInputs);
+                } else {
+                    // Reset inputs if no existing data
+                    setPricingInputs({});
+                }
+            } catch (err) {
+                setError("Failed to load existing pricing data");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadExistingPricing();
+    }, [cityName, countryIso, stateIso]);
+
+    // Responsive container variants
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
         visible: {
@@ -200,353 +489,14 @@ const PricingManagementTab = () => {
         exit: { opacity: 0, y: -20, transition: { duration: 0.3 } }
     };
 
-    const itemVariants = {
-        hidden: { opacity: 0, y: 10 },
-        visible: { opacity: 1, y: 0 }
-    };
-
-    // Fetch all countries
-    useEffect(() => {
-        fetchCountriesAndCities();
-    }, []);
-
-    // Fetch cities and cabModelOrder when a country is selected
-    useEffect(() => {
-        if (!selectedCountry) {
-            setCities([]);
-            setCabModelOrder(DEFAULT_CAB_MODELS);
-            return;
-        }
-        const fetchCities = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const countryDoc = await getDoc(doc(db, "pricing", selectedCountry.id));
-                if (countryDoc.exists()) {
-                    const data = countryDoc.data();
-                    setCities(data.states || []);
-                    setCabModelOrder(data.cabModelOrder || DEFAULT_CAB_MODELS);
-                }
-            } catch (error) {
-                console.error("Failed to load cities:", error);
-                setError("Failed to load cities. Please try again.");
-                toast.error("Failed to load cities");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCities();
-        // Reset city filter when changing country
-        setStateFilter("");
-    }, [selectedCountry]);
-
-    // Handle setting an editing city, with scroll and focus
-    const handleSetEditingCity = (city) => {
-        setEditingCity(city);
-
-        // Set a small timeout to allow the editor to render before scrolling
-        setTimeout(() => {
-            pricingEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            pricingEditorRef.current?.focus();
-        }, 100);
-    };
-
-    // Fetch pricing when a city is selected for editing
-    useEffect(() => {
-        if (!editingCity) {
-            setPricing({});
-            return;
-        }
-        setPricing(editingCity.pricing || {});
-    }, [editingCity]);
-
-    // Add a new country
-    const handleAddCountry = async () => {
-        if (!newCountry.trim()) {
-            toast.error("Country name is required");
-            return;
-        }
-        setLoading(true);
-        setError(null);
-        try {
-            const exists = countries.some(c => c.country.toLowerCase() === newCountry.toLowerCase());
-            if (exists) {
-                toast.error("Country already exists");
-                return;
-            }
-            const newCountryRef = doc(collection(db, "pricing"));
-            await setDoc(newCountryRef, {
-                country: newCountry,
-                states: [],
-                cabModelOrder: DEFAULT_CAB_MODELS
-            });
-            const newCountryObj = {
-                id: newCountryRef.id,
-                country: newCountry,
-                cabModelOrder: DEFAULT_CAB_MODELS
-            };
-            setCountries([...countries, newCountryObj]);
-            setSelectedCountry(newCountryObj); // Auto-select the new country
-            setNewCountry("");
-            toast.success("Country added successfully");
-        } catch (error) {
-            console.error("Failed to add country:", error);
-            setError("Failed to add country. Please try again.");
-            toast.error("Failed to add country");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Delete a country
-    const handleDeleteCountry = async (country) => {
-        if (!window.confirm(`Delete country "${country.country}" and all its cities?`)) return;
-        setLoading(true);
-        setError(null);
-        try {
-            await deleteDoc(doc(db, "pricing", country.id));
-            setCountries(countries.filter(c => c.id !== country.id));
-            if (selectedCountry?.id === country.id) {
-                setSelectedCountry(null);
-                setCities([]);
-                setEditingCity(null);
-            }
-            toast.success("Country deleted successfully");
-        } catch (error) {
-            console.error("Failed to delete country:", error);
-            setError("Failed to delete country. Please try again.");
-            toast.error("Failed to delete country");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Add a new city
-    const handleAddCity = async () => {
-        if (!selectedCountry) {
-            toast.error("Please select a country first");
-            return;
-        }
-        if (!newCityData.state.trim() || !newCityData.city.trim()) {
-            toast.error("State and city names are required");
-            return;
-        }
-        setLoading(true);
-        setError(null);
-        try {
-            const cityExists = cities.some(
-                c => c.city.toLowerCase() === newCityData.city.toLowerCase() &&
-                    c.state.toLowerCase() === newCityData.state.toLowerCase()
-            );
-            if (cityExists) {
-                toast.error("This city already exists");
-                return;
-            }
-            const newPricing = {};
-            cabModelOrder.forEach(model => {
-                newPricing[model] = { "4hr40km": 0, "8hr80km": 0, "airport": 0 };
-            });
-            const newCity = {
-                state: newCityData.state,
-                city: newCityData.city,
-                pricing: newPricing
-            };
-            const updatedCities = [...cities, newCity];
-            await updateDoc(doc(db, "pricing", selectedCountry.id), { states: updatedCities });
-            setCities(updatedCities);
-            setNewCityData({ state: "", city: "" });
-            toast.success("City added successfully");
-
-            // Set state filter to the new city's state
-            setStateFilter(newCity.state);
-
-            // Auto-edit the new city after a short delay
-            setTimeout(() => {
-                handleSetEditingCity(newCity);
-            }, 300);
-        } catch (error) {
-            console.error("Failed to add city:", error);
-            setError("Failed to add city. Please try again.");
-            toast.error("Failed to add city");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Delete a city
-    const handleDeleteCity = async (cityToDelete) => {
-        if (!selectedCountry) return;
-        if (!window.confirm(`Delete city "${cityToDelete.city}, ${cityToDelete.state}"?`)) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const updatedCities = cities.filter(
-                c => !(c.city === cityToDelete.city && c.state === cityToDelete.state)
-            );
-            await updateDoc(doc(db, "pricing", selectedCountry.id), { states: updatedCities });
-            setCities(updatedCities);
-            if (editingCity && editingCity.city === cityToDelete.city && editingCity.state === cityToDelete.state) {
-                setEditingCity(null);
-                setPricing({});
-            }
-            toast.success("City deleted successfully");
-        } catch (error) {
-            console.error("Failed to delete city:", error);
-            setError("Failed to delete city. Please try again.");
-            toast.error("Failed to delete city");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Add a new cab model to pricing (and update cabModelOrder in Firebase)
-    const handleAddCabModelToPricing = async (cabModel) => {
-        if (!cabModel) {
-            toast.error("Please select a cab model");
-            return;
-        }
-        if (pricing[cabModel]) {
-            toast.error("This cab model already exists in pricing");
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-        try {
-            // First update local state for instant feedback
-            setPricing(prev => ({
-                ...prev,
-                [cabModel]: { "4hr40km": 0, "8hr80km": 0, "airport": 0 }
-            }));
-
-            // Update cabModelOrder in Firebase and local state
-            if (!cabModelOrder.includes(cabModel)) {
-                const newOrder = [...cabModelOrder, cabModel];
-                setCabModelOrder(newOrder);
-                await updateDoc(doc(db, "pricing", selectedCountry.id), { cabModelOrder: newOrder });
-            }
-
-            setNewCabModel("");
-            toast.success(`Added ${cabModel} to pricing`);
-        } catch (error) {
-            console.error("Failed to add cab model:", error);
-            setError("Failed to add cab model. Please try again.");
-            toast.error("Failed to add cab model");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Remove a cab model from pricing (and update cabModelOrder in Firebase)
-    const handleRemoveCabModelFromPricing = async (cabModel) => {
-        if (!window.confirm(`Remove "${cabModel}" from pricing for this city?`)) return;
-
-        setLoading(true);
-        setError(null);
-        try {
-            // Remove cab model only from this city's pricing
-            const newPricing = { ...pricing };
-            delete newPricing[cabModel];
-            setPricing(newPricing);
-
-            toast.success(`Removed ${cabModel} from this city's pricing`);
-        } catch (error) {
-            console.error("Failed to remove cab model:", error);
-            setError("Failed to remove cab model. Please try again.");
-            toast.error("Failed to remove cab model");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Update pricing for a city
-    const handleUpdatePricing = async () => {
-        if (!selectedCountry || !editingCity) {
-            toast.error("Please select a country and city");
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-        try {
-            const updatedCities = cities.map(city => {
-                if (city.city === editingCity.city && city.state === editingCity.state) {
-                    return { ...city, pricing: pricing };
-                }
-                return city;
-            });
-
-            await updateDoc(doc(db, "pricing", selectedCountry.id), { states: updatedCities });
-            setCities(updatedCities);
-            toast.success("Pricing updated successfully");
-
-            // Don't close the editor automatically, allow the user to continue editing
-            // Just update the reference to the updated city
-            const updatedCity = updatedCities.find(
-                c => c.city === editingCity.city && c.state === editingCity.state
-            );
-            setEditingCity(updatedCity);
-        } catch (error) {
-            console.error("Failed to update pricing:", error);
-            setError("Failed to update pricing. Please try again.");
-            toast.error("Failed to update pricing");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Handle price change with proper validation
-    const handlePriceChange = (cabModel, packageType, value) => {
-        // Allow empty string for easier editing, but convert to 0 for storage
-        const numValue = value === "" ? "" : parseInt(value) || 0;
-
-        setPricing({
-            ...pricing,
-            [cabModel]: {
-                ...pricing[cabModel],
-                [packageType]: numValue
-            }
-        });
-    };
-
-    const handleBulkImport = (newPricing) => {
-        if (!editingCity) return;
-
-        // Since we're now passing the full pricing object from BulkImportPricing
-        // we can just set it directly
-        setPricing(newPricing);
-    };
-
-    // Filtered cities by state
-    const filteredCities = stateFilter
-        ? cities.filter(city => city.state.toLowerCase() === stateFilter.toLowerCase())
-        : cities;
-
-    // All unique states for filter dropdown
-    const allStates = Array.from(new Set(cities.map(city => city.state))).sort();
-
     return (
         <motion.div
-            className="bg-white p-6 rounded-lg shadow-md"
+            className="bg-white p-4 md:p-6 rounded-lg shadow-md"
             aria-label="Pricing Management"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
         >
-            <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-primary flex items-center">
-                    <DollarSign className="mr-2" />
-                    Pricing Management
-                </h2>
-                <Button
-                    onClick={() => setIsGlobalUpdateOpen(true)}
-                    text="Update All Pricing"
-                    className="bg-primary text-white hover:bg-primary/90 px-4 py-2 rounded-md flex items-center"
-                >
-                    <Upload size={16} className="mr-2" />
-                    <span>Update All Pricing</span>
-                </Button>
-            </div>
 
             {/* Error Display */}
             <AnimatePresence>
@@ -589,519 +539,201 @@ const PricingManagementTab = () => {
                 )}
             </AnimatePresence>
 
-            {/* Country Management Section */}
-            <motion.section
-                className="mb-8 p-4 border border-gray-200 rounded-lg bg-gradient-to-r from-primary/5 to-gray-50"
-                aria-label="Country Management"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-            >
-                <h3 className="text-xl font-semibold text-primary mb-4 flex items-center">
-                    <Globe className="mr-2" size={20} />
-                    Countries
-                </h3>
-                <motion.div className="flex gap-2 mb-4" variants={itemVariants}>
-                    <input
-                        type="text"
-                        value={newCountry}
-                        onChange={e => setNewCountry(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleAddCountry()}
-                        placeholder="New Country Name"
-                        className="px-3 py-2 border border-gray-300 rounded-md flex-grow focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                        aria-label="New Country Name"
-                        disabled={loading}
-                    />
-                    <motion.button
-                        onClick={handleAddCountry}
-                        disabled={loading}
-                        className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 flex items-center"
-                        aria-label="Add Country"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        <PlusCircle size={16} className="mr-1" /> Add Country
-                    </motion.button>
-                </motion.div>
-                <motion.div
-                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
-                    variants={containerVariants}
+            <div className="mb-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-primary flex items-center">
+                    <DollarSign className="mr-2" />
+                    Pricing Management
+                </h2>
+
+                <Button
+                    onClick={() => setShowExcelUploader(true)}
+                    className="bg-accent text-white px-4 py-2 rounded-md hover:bg-accent/90 transition-all flex items-center"
+                    disabled={loading}
                 >
-                    {countries.map(country => (
-                        <motion.div
-                            key={country.id}
-                            tabIndex={0}
-                            role="button"
-                            aria-pressed={selectedCountry?.id === country.id}
-                            onClick={() => setSelectedCountry(country)}
-                            onKeyDown={e => (e.key === "Enter" || e.key === " ") && setSelectedCountry(country)}
-                            className={`p-3 rounded-md cursor-pointer transition-all flex items-center justify-between outline-none ring-offset-2 focus:ring-2 focus:ring-primary ${selectedCountry?.id === country.id
-                                ? "bg-primary text-white shadow-md"
-                                : "bg-gray-100 hover:bg-gray-200 text-gray-800"
-                                }`}
-                            variants={itemVariants}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <span className="font-medium truncate">{country.country}</span>
-                            <button
-                                onClick={e => { e.stopPropagation(); handleDeleteCountry(country); }}
-                                className={`ml-2 p-1.5 rounded-full focus:outline-none focus:ring-2 ${selectedCountry?.id === country.id
-                                    ? "text-white/80 hover:text-white hover:bg-white/20 focus:ring-white"
-                                    : "text-red-600 hover:text-red-800 hover:bg-red-100 focus:ring-red-500"
-                                    }`}
-                                aria-label={`Delete ${country.country}`}
-                                tabIndex={0}
-                                disabled={loading}
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                        </motion.div>
-                    ))}
-                </motion.div>
-            </motion.section>
+                    <FileUp size={16} className="mr-2" /> Update Pricing
+                </Button>
+            </div>
 
-            {/* City Management Section */}
+            {/* Excel Uploader Modal */}
             <AnimatePresence>
-                {selectedCountry && (
-                    <motion.section
-                        className="mb-8 p-4 border border-gray-200 rounded-lg bg-gradient-to-r from-primary/5 to-gray-50"
-                        aria-label="City Management"
-                        key="city-management"
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                    >
-                        <div className="mt-4 mb-6 flex justify-end">
-                            <Button
-                                onClick={() => setIsCountryUpdateOpen(true)}
-                                className="bg-primary/90 text-white hover:bg-primary px-4 py-2 rounded-md flex items-center"
-                            >
-                                <Upload size={16} className="mr-2" />
-                                <span>Update All Prices for {selectedCountry.country}</span>
-                            </Button>
-                        </div>
-
-                        <h3 className="text-xl font-semibold text-primary mb-4 flex items-center">
-                            <MapPin className="mr-2" size={20} />
-                            Cities in {selectedCountry.country}
-                        </h3>
-                        <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5" variants={itemVariants}>
-                            <input
-                                type="text"
-                                value={newCityData.state}
-                                onChange={e => setNewCityData({ ...newCityData, state: e.target.value })}
-                                placeholder="State"
-                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                                aria-label="State"
-                                disabled={loading}
-                            />
-                            <input
-                                type="text"
-                                value={newCityData.city}
-                                onChange={e => setNewCityData({ ...newCityData, city: e.target.value })}
-                                onKeyDown={e => e.key === 'Enter' && handleAddCity()}
-                                placeholder="City"
-                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                                aria-label="City"
-                                disabled={loading}
-                            />
-                            <motion.button
-                                onClick={handleAddCity}
-                                disabled={loading}
-                                className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 flex items-center justify-center"
-                                aria-label="Add City"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
-                                <PlusCircle size={16} className="mr-1" /> Add City
-                            </motion.button>
-                        </motion.div>
-
-                        {/* State Filter */}
-                        <motion.div className="mb-5 flex flex-wrap items-center gap-2" variants={itemVariants}>
-                            <label htmlFor="stateFilter" className="text-sm font-medium text-primary">
-                                Filter by State:
-                            </label>
-                            <div className="relative flex-grow max-w-xs">
-                                <select
-                                    id="stateFilter"
-                                    value={stateFilter}
-                                    onChange={e => setStateFilter(e.target.value)}
-                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all pr-10"
-                                    aria-label="Filter by State"
-                                    disabled={loading || allStates.length === 0}
-                                >
-                                    <option value="">All States</option>
-                                    {allStates.map(state => (
-                                        <option key={state} value={state}>{state}</option>
-                                    ))}
-                                </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                                    <ChevronDown size={16} className="text-gray-500" />
-                                </div>
-                            </div>
-                            {stateFilter && (
-                                <motion.button
-                                    onClick={() => setStateFilter("")}
-                                    className="text-gray-500 hover:text-primary hover:bg-gray-100 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                                    aria-label="Clear State Filter"
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                >
-                                    <X size={18} />
-                                </motion.button>
-                            )}
-                            <span className="text-sm text-gray-500 ml-auto">
-                                {filteredCities.length} {filteredCities.length === 1 ? 'city' : 'cities'}
-                                {stateFilter ? ` in ${stateFilter}` : ''}
-                            </span>
-                        </motion.div>
-
-                        {/* City List */}
-                        <motion.div
-                            className="overflow-x-auto rounded-lg border border-gray-200"
-                            variants={itemVariants}
-                        >
-                            <table
-                                className="min-w-full divide-y divide-gray-200"
-                                aria-label="City List"
-                            >
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">State</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">City</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredCities.length > 0 ? (
-                                        filteredCities.map((city, index) => (
-                                            <motion.tr
-                                                key={`${city.state}-${city.city}-${index}`}
-                                                className={`${editingCity && editingCity.city === city.city && editingCity.state === city.state ? "bg-primary/10" : "hover:bg-gray-50"} transition-colors`}
-                                                ref={el => cityRowRefs.current[`${city.state}-${city.city}`] = el}
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                transition={{ delay: index * 0.05 }}
-                                            >
-                                                <td className="px-6 py-4 whitespace-nowrap">{city.state}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap font-medium">{city.city}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex gap-2">
-                                                        <motion.button
-                                                            onClick={() => handleSetEditingCity(city)}
-                                                            className={`${editingCity && editingCity.city === city.city && editingCity.state === city.state
-                                                                ? "bg-primary text-white"
-                                                                : "bg-primary/20 text-primary hover:bg-primary/30"
-                                                                } px-3 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary`}
-                                                            aria-label={`Edit pricing for ${city.city}, ${city.state}`}
-                                                            aria-pressed={editingCity && editingCity.city === city.city && editingCity.state === city.state}
-                                                            whileHover={{ scale: 1.05 }}
-                                                            whileTap={{ scale: 0.95 }}
-                                                            disabled={loading}
-                                                        >
-                                                            {editingCity && editingCity.city === city.city && editingCity.state === city.state
-                                                                ? "Currently Editing"
-                                                                : "Edit Pricing"}
-                                                        </motion.button>
-                                                        <motion.button
-                                                            onClick={() => handleDeleteCity(city)}
-                                                            className="bg-red-100 text-red-600 px-3 py-1.5 rounded-md hover:bg-red-200 transition-colors flex items-center focus:outline-none focus:ring-2 focus:ring-red-500"
-                                                            aria-label={`Delete ${city.city}, ${city.state}`}
-                                                            whileHover={{ scale: 1.05 }}
-                                                            whileTap={{ scale: 0.95 }}
-                                                            disabled={loading}
-                                                        >
-                                                            <Trash2 size={14} className="mr-1" /> Delete
-                                                        </motion.button>
-                                                    </div>
-                                                </td>
-                                            </motion.tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={3} className="px-6 py-4 text-center text-gray-500 italic">
-                                                {stateFilter
-                                                    ? `No cities found in ${stateFilter}. Try another state or add a new city.`
-                                                    : 'No cities found. Add your first city using the form above.'}
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </motion.div>
-                    </motion.section>
-                )}
-            </AnimatePresence>
-
-            {/* Inline Pricing Editor */}
-            <AnimatePresence>
-                {editingCity && (
-                    <motion.section
-                        ref={pricingEditorRef}
-                        tabIndex={-1}
-                        className="mt-4 mb-8 p-5 border-2 border-primary rounded-lg bg-gradient-to-r from-primary/10 to-gray-50 shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50"
-                        aria-label={`Edit Pricing for ${editingCity.city}, ${editingCity.state}`}
-                        key="pricing-editor"
-                        initial={{ opacity: 0, y: 20, height: 0 }}
-                        animate={{
-                            opacity: 1,
-                            y: 0,
-                            height: 'auto',
-                            transition: {
-                                duration: 0.4,
-                                ease: "easeOut"
-                            }
-                        }}
-                        exit={{
-                            opacity: 0,
-                            y: -20,
-                            height: 0,
-                            transition: {
-                                duration: 0.3,
-                                ease: "easeIn"
-                            }
-                        }}
-                    >
-                        <div className="flex items-center justify-between mb-5 border-b border-primary/20 pb-3">
-                            <h3 className="text-xl font-semibold text-primary flex items-center">
-                                <Car className="mr-2" size={20} />
-                                Pricing for {editingCity.city}, {editingCity.state}
-                            </h3>
-                            <motion.button
-                                onClick={() => { setEditingCity(null); setPricing({}); }}
-                                className="text-gray-500 hover:text-primary hover:bg-primary/10 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                                aria-label="Close Pricing Editor"
-                                whileHover={{ scale: 1.1, rotate: 90 }}
-                                whileTap={{ scale: 0.9 }}
-                            >
-                                <X size={20} />
-                            </motion.button>
-                        </div>
-
-                        {/* Cab Model Management */}
-                        <motion.div
-                            className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200"
-                            variants={itemVariants}
-                        >
-                            <h4 className="text-lg font-medium text-primary mb-3">Add Cab Model to Pricing</h4>
-                            <div className="flex flex-wrap gap-3 mb-4">
-                                <div className="relative flex-grow max-w-md">
-                                    <select
-                                        value={newCabModel}
-                                        onChange={e => setNewCabModel(e.target.value)}
-                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all pr-10"
-                                        aria-label="Select Cab Model"
-                                        disabled={loading || cabModels.filter(model => !pricing[model]).length === 0}
-                                    >
-                                        <option value="">Select a Cab Model</option>
-                                        {cabModels.filter(model => !pricing[model]).map(model => (
-                                            <option key={model} value={model}>{model}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                                        <ChevronDown size={16} className="text-gray-500" />
-                                    </div>
-                                </div>
-                                <motion.button
-                                    onClick={() => handleAddCabModelToPricing(newCabModel)}
-                                    disabled={!newCabModel || loading}
-                                    className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 flex items-center"
-                                    aria-label="Add Cab Model to Pricing"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                >
-                                    <PlusCircle size={16} className="mr-1" /> Add to Pricing
-                                </motion.button>
-                            </div>
-                        </motion.div>
-
-                        {/* Pricing Table */}
-                        <motion.div
-                            className="overflow-x-auto rounded-lg border border-gray-200 bg-white"
-                            variants={itemVariants}
-                        >
-                            <motion.div className="mb-5 p-4" variants={itemVariants}>
-                                <BulkImportPricing
-                                    onImport={handleBulkImport}
-                                    activeCabModels={cabModelOrder.filter(model => pricing[model])}
-                                    pricing={pricing}
-                                    cityName={editingCity.city}
-                                    countryName={selectedCountry?.country || ''}
-                                />
-                            </motion.div>
-
-                            <table className="min-w-full divide-y divide-gray-200" aria-label="Pricing Table">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Cab Model</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">4hr/40km</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">8hr/80km</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Airport Transfer</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {cabModelOrder.filter(model => pricing[model]).length > 0 ? (
-                                        cabModelOrder.filter(model => pricing[model]).map((model, index) => (
-                                            <motion.tr
-                                                key={model}
-                                                initial={{ opacity: 0, backgroundColor: "rgba(90, 48, 146, 0.1)" }}
-                                                animate={{ opacity: 1, backgroundColor: "rgba(255, 255, 255, 1)" }}
-                                                transition={{ delay: index * 0.05, duration: 0.3 }}
-                                                className="hover:bg-gray-50 transition-colors"
-                                            >
-                                                <td className="px-6 py-4 whitespace-nowrap font-medium">{model}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <input
-                                                        type="number"
-                                                        value={pricing[model]["4hr40km"]}
-                                                        onChange={e => handlePriceChange(model, "4hr40km", e.target.value)}
-                                                        className="w-28 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                                                        min="0"
-                                                        aria-label={`4hr/40km price for ${model}`}
-                                                        disabled={loading}
-                                                        onPaste={e => {
-                                                            // This handles pasting directly into a cell
-                                                            e.preventDefault();
-                                                            const pasteData = e.clipboardData.getData('text').trim();
-                                                            const values = pasteData.split('\t').map(v => parseFloat(v) || 0);
-
-                                                            if (values.length >= 1) {
-                                                                const updatedPricing = { ...pricing };
-
-                                                                // Update this model with pasted values
-                                                                updatedPricing[model] = {
-                                                                    ...updatedPricing[model],
-                                                                    "4hr40km": values[0]
-                                                                };
-
-                                                                if (values.length >= 2) {
-                                                                    updatedPricing[model]["8hr80km"] = values[1];
-                                                                }
-
-                                                                if (values.length >= 3) {
-                                                                    updatedPricing[model]["airport"] = values[2];
-                                                                }
-
-                                                                // Save this state to history (if you want cell pastes in history too)
-                                                                // and update the pricing
-                                                                setPricing(updatedPricing);
-                                                            }
-                                                        }}
-                                                    />
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <input
-                                                        type="number"
-                                                        value={pricing[model]["8hr80km"]}
-                                                        onChange={e => handlePriceChange(model, "8hr80km", e.target.value)}
-                                                        className="w-28 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                                                        min="0"
-                                                        aria-label={`8hr/80km price for ${model}`}
-                                                        disabled={loading}
-                                                    />
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <input
-                                                        type="number"
-                                                        value={pricing[model]["airport"]}
-                                                        onChange={e => handlePriceChange(model, "airport", e.target.value)}
-                                                        className="w-28 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                                                        min="0"
-                                                        aria-label={`Airport price for ${model}`}
-                                                        disabled={loading}
-                                                    />
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <motion.button
-                                                        onClick={() => handleRemoveCabModelFromPricing(model)}
-                                                        className="bg-red-100 text-red-600 px-3 py-1.5 rounded-md hover:bg-red-200 transition-colors flex items-center focus:outline-none focus:ring-2 focus:ring-red-500"
-                                                        aria-label={`Remove ${model} from pricing`}
-                                                        whileHover={{ scale: 1.05 }}
-                                                        whileTap={{ scale: 0.95 }}
-                                                        disabled={loading}
-                                                    >
-                                                        <Trash2 size={14} className="mr-1" /> Remove
-                                                    </motion.button>
-                                                </td>
-                                            </motion.tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-4 text-center text-gray-500 italic">
-                                                No cab models added yet. Use the "Add Cab Model" section above to add pricing.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </motion.div>
-
-                        {/* Save Button */}
-                        <motion.div
-                            className="mt-6 flex justify-end gap-3"
-                            variants={itemVariants}
-                        >
-                            <motion.button
-                                onClick={() => { setEditingCity(null); setPricing({}); }}
-                                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
-                                aria-label="Cancel"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                disabled={loading}
-                            >
-                                Cancel
-                            </motion.button>
-                            <motion.button
-                                onClick={handleUpdatePricing}
-                                disabled={loading}
-                                className="bg-primary text-white px-6 py-2.5 rounded-md hover:bg-primary/90 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 font-medium shadow-sm"
-                                aria-label="Save Pricing"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
-                                {loading ? 'Saving...' : 'Save Pricing'}
-                            </motion.button>
-                        </motion.div>
-                    </motion.section>
-                )}
-            </AnimatePresence>
-            <>
-                {/* Global Update Modal */}
-                <BulkPricingUpdate
-                    isOpen={isGlobalUpdateOpen}
-                    onClose={() => setIsGlobalUpdateOpen(false)}
-                    onApplyBulkUpdate={(data) => handleBulkUpdate(data, 'global')}
-                    updateType="global"
-                    loading={updateLoading}
-                />
-
-                {/* Country Update Modal */}
-                <BulkPricingUpdate
-                    isOpen={isCountryUpdateOpen}
-                    onClose={() => setIsCountryUpdateOpen(false)}
-                    onApplyBulkUpdate={(data) => handleBulkUpdate(data, 'country')}
-                    updateType="country"
-                    countryName={selectedCountry?.country || ''}
-                    loading={updateLoading}
-                />
-
-                {/* City Update Modal */}
-                {editingCity && (
-                    <BulkPricingUpdate
-                        isOpen={isCityUpdateOpen}
-                        onClose={() => setIsCityUpdateOpen(false)}
-                        onApplyBulkUpdate={(data) => handleBulkUpdate(data, 'city')}
-                        updateType="city"
-                        countryName={selectedCountry?.country || ''}
-                        cityName={editingCity.city || ''}
-                        loading={updateLoading}
+                {showExcelUploader && (
+                    <PricingExcelUploader
+                        isOpen={showExcelUploader}
+                        onClose={() => setShowExcelUploader(false)}
+                        onSuccess={handleExcelUploaderSuccess}
                     />
                 )}
-            </>
+            </AnimatePresence>
+
+            {/* Country Dropdown */}
+            <div className="mb-4 flex flex-col md:flex-row gap-2 items-center">
+                <Dropdown
+                    label="Country"
+                    value={countryIso}
+                    options={countryOptions}
+                    onChange={e => setCountryIso(e.target.value)}
+                    disabled={loading}
+                    icon={<Globe size={16} />}
+                    placeholder="Select Country"
+                />
+
+                <Button
+                    onClick={handleDeleteCountry}
+                    text="Delete Country"
+                    className="bg-red-100 !text-red-600 px-4 py-2 mt-4 rounded-md hover:bg-red-200 transition-all"
+                    disabled={loading || !selectedCountry}
+                >
+                    <Trash2 size={16} className="mr-1" /> Delete Country
+                </Button>
+            </div>
+
+            {/* State Dropdown */}
+            <div className="mb-4 flex flex-col md:flex-row gap-2 items-center">
+                <Dropdown
+                    label="State"
+                    value={stateIso}
+                    options={stateOptions}
+                    onChange={e => setStateIso(e.target.value)}
+                    disabled={loading || !countryIso}
+                    icon={<MapPin size={16} />}
+                    placeholder="Select State"
+                />
+
+                <Button
+                    onClick={handleDeleteState}
+                    text="Delete State"
+                    className="bg-red-100 !text-red-600 px-4 py-2 mt-4 rounded-md hover:bg-red-200 transition-all"
+                    disabled={loading || !selectedState}
+                >
+                    <Trash2 size={16} className="mr-1" /> Delete State
+                </Button>
+            </div>
+
+            {/* City Dropdown */}
+            <div className="mb-4 flex flex-col md:flex-row gap-2 items-center">
+                <Dropdown
+                    label="City"
+                    value={cityName}
+                    options={cityOptions}
+                    onChange={e => setCityName(e.target.value)}
+                    disabled={loading || !stateIso}
+                    icon={<Car size={16} />}
+                    placeholder="Select City"
+                />
+            </div>
+
+            {/* Pricing Inputs for all categories */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {DEFAULT_CAB_MODELS.map(model => (
+                    <div key={model} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h4 className="text-primary font-semibold mb-2">{model}</h4>
+                        <div className="flex flex-col gap-2">
+                            <input
+                                type="number"
+                                placeholder="4H-40km Rate"
+                                value={pricingInputs[model]?.["4H-40kmRate"] ?? ""}
+                                onChange={e => handlePricingInputChange(model, "4H-40kmRate", e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                                min="0"
+                                disabled={loading}
+                            />
+                            <input
+                                type="number"
+                                placeholder="8H-80km Rate"
+                                value={pricingInputs[model]?.["8H-80kmRate"] ?? ""}
+                                onChange={e => handlePricingInputChange(model, "8H-80kmRate", e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                                min="0"
+                                disabled={loading}
+                            />
+                            <input
+                                type="number"
+                                placeholder="Airport Rate"
+                                value={pricingInputs[model]?.["AirportRate"] ?? ""}
+                                onChange={e => handlePricingInputChange(model, "AirportRate", e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                                min="0"
+                                disabled={loading}
+                            />
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <Button
+                onClick={handleAddCity}
+                text="Add City Pricing"
+                className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90 transition-all"
+                disabled={loading || !cityName}
+            >
+                <PlusCircle size={16} className="mr-1" /> Add City Pricing
+            </Button>
+            {/* Pricing Table */}
+            <div className="mt-8 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                <table className="min-w-full divide-y divide-gray-200" aria-label="Pricing Table">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">City</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">State</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Country</th>
+                            {DEFAULT_CAB_MODELS.map(model => (
+                                <th key={model} className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">{model}</th>
+                            ))}
+                            <th className="px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {pricingDocs.length > 0 ? (
+                            pricingDocs.map(doc => (
+                                <tr key={doc.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap">{doc.cityName}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{doc.stateName}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{doc.countryName}</td>
+                                    {DEFAULT_CAB_MODELS.map(model => {
+                                        const key = `${model.replace(/\s+/g, '').replace(/\+/g, 'Plus')}Pricing`;
+                                        const pricing = doc[key];
+                                        return (
+                                            <td key={model} className="px-6 py-4 whitespace-nowrap">
+                                                {pricing
+                                                    ? <>
+                                                        <div>4H-40km: {pricing["4H-40kmRate"]}</div>
+                                                        <div>8H-80km: {pricing["8H-80kmRate"]}</div>
+                                                        <div>Airport: {pricing["AirportRate"]}</div>
+                                                        <Button
+                                                            onClick={() => handleRemoveCategory(doc, key)}
+                                                            className="bg-red-200 !text-red-600 px-2 py-1 rounded hover:bg-red-300 mt-2"
+                                                            disabled={loading}
+                                                        >
+                                                            <Trash2 size={12} className="mr-1" />
+                                                        </Button>
+                                                    </>
+                                                    : <span className="text-gray-400 italic">No Data</span>
+                                                }
+                                            </td>
+                                        );
+                                    })}
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <Button
+                                            onClick={() => handleDeleteCity(doc)}
+                                            text="Delete"
+                                            className="bg-red-100 !text-red-600 px-3 py-1 rounded hover:bg-red-200"
+                                            disabled={loading}
+                                        >
+                                            <Trash2 size={14} className="mr-1" /> Delete
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={DEFAULT_CAB_MODELS.length + 4} className="px-6 py-4 text-center text-gray-500 italic">
+                                    No pricing data found for this state.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </motion.div>
     );
 };

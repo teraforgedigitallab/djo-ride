@@ -3,7 +3,7 @@ import { Search, MapPin, Globe, ChevronDown, ChevronUp, AlertCircle } from 'luci
 import { motion, AnimatePresence } from 'framer-motion';
 import data from '../data/data.json';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { US, IN, AE, CA, GB, AU } from 'country-flag-icons/react/3x2';
+import { AD, AE, AF, AG, AI, AL, AM, AO, AQ, AR, AS, AT, AU, AW, AX, AZ, BA, BB, BD, BE, BF, BG, BH, BI, BJ, BL, BM, BN, BO, BQ, BR, BS, BT, BV, BW, BY, BZ, CA, CC, CD, CF, CG, CH, CI, CK, CL, CM, CN, CO, CR, CU, CV, CW, CX, CY, CZ, DE, DJ, DK, DM, DO, DZ, EC, EE, EG, EH, ER, ES, ET, FI, FJ, FK, FM, FO, FR, GA, GB, GD, GE, GF, GG, GH, GI, GL, GM, GN, GP, GQ, GR, GS, GT, GU, GW, GY, HK, HM, HN, HR, HT, HU, ID, IE, IL, IM, IN, IO, IQ, IR, IS, IT, JE, JM, JO, JP, KE, KG, KH, KI, KM, KN, KP, KR, KW, KY, KZ, LA, LB, LC, LI, LK, LR, LS, LT, LU, LV, LY, MA, MC, MD, ME, MF, MG, MH, MK, ML, MM, MN, MO, MP, MQ, MR, MS, MT, MU, MV, MW, MX, MY, MZ, NA, NC, NE, NF, NG, NI, NL, NO, NP, NR, NU, NZ, OM, PA, PE, PF, PG, PH, PK, PL, PM, PN, PR, PS, PT, PW, PY, QA, RE, RO, RS, RU, RW, SA, SB, SC, SD, SE, SG, SH, SI, SJ, SK, SL, SM, SN, SO, SR, SS, ST, SV, SX, SY, SZ, TC, TD, TF, TG, TH, TJ, TK, TL, TM, TN, TO, TR, TT, TV, TW, TZ, UA, UG, UM, US, UY, UZ, VA, VC, VE, VG, VI, VN, VU, WF, WS, XK, YE, YT, ZA, ZM, ZW } from 'country-flag-icons/react/3x2';
 
 const CitySelector = ({ onCitySelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,69 +14,92 @@ const CitySelector = ({ onCitySelect }) => {
   const [showCountrySelector, setShowCountrySelector] = useState(true);
   const [countryPopularCities, setCountryPopularCities] = useState([]);
   const [hasCountryData, setHasCountryData] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   // Fetch countries from Firestore
   useEffect(() => {
     const fetchCountries = async () => {
-      const db = getFirestore();
-      const pricingSnapshot = await getDocs(collection(db, "pricing"));
-      const availableCountries = [];
-      pricingSnapshot.forEach(doc => {
-        const docData = doc.data();
-        if (docData.country) availableCountries.push(docData.country);
-      });
-      setCountries(availableCountries);
+      try {
+        setLoading(true);
+        const db = getFirestore();
+        const pricingSnapshot = await getDocs(collection(db, "pricing"));
+        const availableCountries = [];
+
+        pricingSnapshot.forEach(doc => {
+          const docData = doc.data();
+          if (docData.countryName && !availableCountries.includes(docData.countryName)) {
+            availableCountries.push(docData.countryName);
+          }
+        });
+
+        setCountries(availableCountries.sort());
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching countries:", error);
+        setLoading(false);
+      }
     };
+
     fetchCountries();
   }, []);
 
   // Fetch cities for selected country from Firestore
   useEffect(() => {
-    if (selectedCountry) {
-      setShowCountrySelector(false);
+  if (selectedCountry) {
+    setShowCountrySelector(false);
+    setLoading(true);
 
-      const fetchCities = async () => {
+    const fetchCities = async () => {
+      try {
         const db = getFirestore();
         const pricingSnapshot = await getDocs(collection(db, "pricing"));
-        let countryData = null;
+        const citiesList = [];
+
         pricingSnapshot.forEach(doc => {
           const docData = doc.data();
-          if (docData.country === selectedCountry) countryData = docData;
+          if (docData.countryName === selectedCountry && docData.cityName && docData.stateName) {
+            citiesList.push({
+              city: docData.cityName,
+              state: docData.stateName,
+              country: docData.countryName,
+              id: doc.id,
+              imageUrl: docData.imageUrl || null
+            });
+          }
         });
 
-        if (countryData && countryData.states && countryData.states.length > 0) {
+        if (citiesList.length > 0) {
           setHasCountryData(true);
-          const countryCities = countryData.states
-            .filter(item => item.city)
-            .map(item => ({
-              city: item.city,
-              state: item.state,
-              country: selectedCountry
-            }));
-          setCities(countryCities);
-          setFilteredCities(countryCities);
+          setCities(citiesList);
+          setFilteredCities(citiesList);
 
-          // Use static popularCities from data.json
-          const popularCitiesForCountry = data.popularCities
-            .filter(item => item.country === selectedCountry)
-            .map(item => item.name);
-          setCountryPopularCities(popularCitiesForCountry);
+          // Make all cities popular by default
+          setCountryPopularCities(citiesList.map(city => city.city));
         } else {
           setHasCountryData(false);
           setCities([]);
           setFilteredCities([]);
           setCountryPopularCities([]);
         }
-      };
-      fetchCities();
-    } else {
-      setCities([]);
-      setFilteredCities([]);
-      setCountryPopularCities([]);
-      setHasCountryData(true);
-    }
-  }, [selectedCountry]);
 
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+        setHasCountryData(false);
+        setLoading(false);
+      }
+    };
+
+    fetchCities();
+  } else {
+    setCities([]);
+    setFilteredCities([]);
+    setCountryPopularCities([]);
+    setHasCountryData(true);
+  }
+}, [selectedCountry]);
+
+  // Filter cities based on search term
   useEffect(() => {
     if (searchTerm && cities.length > 0) {
       const filtered = cities.filter(
@@ -107,35 +130,267 @@ const CitySelector = ({ onCitySelect }) => {
     const flagSize = { width: '100%', height: '100%' };
 
     switch (country.toLowerCase()) {
-      case 'usa':
-        return <US style={flagSize} />;
-      case 'india':
-        return <IN style={flagSize} />;
-      case 'uae':
-        return <AE style={flagSize} />;
-      case 'canada':
-        return <CA style={flagSize} />;
-      case 'uk':
-        return <GB style={flagSize} />;
-      case 'australia':
-        return <AU style={flagSize} />;
-      default:
-        return country.charAt(0); // Fallback to first letter
+      case 'andorra': return <AD style={flagSize} />;
+      case 'united arab emirates': return <AE style={flagSize} />;
+      case 'afghanistan': return <AF style={flagSize} />;
+      case 'antigua and barbuda': return <AG style={flagSize} />;
+      case 'anguilla': return <AI style={flagSize} />;
+      case 'albania': return <AL style={flagSize} />;
+      case 'armenia': return <AM style={flagSize} />;
+      case 'angola': return <AO style={flagSize} />;
+      case 'antarctica': return <AQ style={flagSize} />;
+      case 'argentina': return <AR style={flagSize} />;
+      case 'american samoa': return <AS style={flagSize} />;
+      case 'austria': return <AT style={flagSize} />;
+      case 'australia': return <AU style={flagSize} />;
+      case 'aruba': return <AW style={flagSize} />;
+      case 'åland islands': return <AX style={flagSize} />;
+      case 'azerbaijan': return <AZ style={flagSize} />;
+      case 'bosnia and herzegovina': return <BA style={flagSize} />;
+      case 'barbados': return <BB style={flagSize} />;
+      case 'bangladesh': return <BD style={flagSize} />;
+      case 'belgium': return <BE style={flagSize} />;
+      case 'burkina faso': return <BF style={flagSize} />;
+      case 'bulgaria': return <BG style={flagSize} />;
+      case 'bahrain': return <BH style={flagSize} />;
+      case 'burundi': return <BI style={flagSize} />;
+      case 'benin': return <BJ style={flagSize} />;
+      case 'saint barthélemy': return <BL style={flagSize} />;
+      case 'bermuda': return <BM style={flagSize} />;
+      case 'brunei darussalam': return <BN style={flagSize} />;
+      case 'bolivia, plurinational state of': return <BO style={flagSize} />;
+      case 'bonaire, sint eustatius and saba': return <BQ style={flagSize} />;
+      case 'brazil': return <BR style={flagSize} />;
+      case 'bahamas': return <BS style={flagSize} />;
+      case 'bhutan': return <BT style={flagSize} />;
+      case 'bouvet island': return <BV style={flagSize} />;
+      case 'botswana': return <BW style={flagSize} />;
+      case 'belarus': return <BY style={flagSize} />;
+      case 'belize': return <BZ style={flagSize} />;
+      case 'canada': return <CA style={flagSize} />;
+      case 'cocos (keeling) islands': return <CC style={flagSize} />;
+      case 'congo, the democratic republic of the': return <CD style={flagSize} />;
+      case 'central african republic': return <CF style={flagSize} />;
+      case 'congo': return <CG style={flagSize} />;
+      case 'switzerland': return <CH style={flagSize} />;
+      case 'côte d\'ivoire': return <CI style={flagSize} />;
+      case 'cook islands': return <CK style={flagSize} />;
+      case 'chile': return <CL style={flagSize} />;
+      case 'cameroon': return <CM style={flagSize} />;
+      case 'china': return <CN style={flagSize} />;
+      case 'colombia': return <CO style={flagSize} />;
+      case 'costa rica': return <CR style={flagSize} />;
+      case 'cuba': return <CU style={flagSize} />;
+      case 'cabo verde': return <CV style={flagSize} />;
+      case 'curaçao': return <CW style={flagSize} />;
+      case 'christmas island': return <CX style={flagSize} />;
+      case 'cyprus': return <CY style={flagSize} />;
+      case 'czechia': return <CZ style={flagSize} />;
+      case 'germany': return <DE style={flagSize} />;
+      case 'djibouti': return <DJ style={flagSize} />;
+      case 'denmark': return <DK style={flagSize} />;
+      case 'dominica': return <DM style={flagSize} />;
+      case 'dominican republic': return <DO style={flagSize} />;
+      case 'algeria': return <DZ style={flagSize} />;
+      case 'ecuador': return <EC style={flagSize} />;
+      case 'estonia': return <EE style={flagSize} />;
+      case 'egypt': return <EG style={flagSize} />;
+      case 'western sahara': return <EH style={flagSize} />;
+      case 'eritrea': return <ER style={flagSize} />;
+      case 'spain': return <ES style={flagSize} />;
+      case 'ethiopia': return <ET style={flagSize} />;
+      case 'finland': return <FI style={flagSize} />;
+      case 'fiji': return <FJ style={flagSize} />;
+      case 'falkland islands (malvinas)': return <FK style={flagSize} />;
+      case 'micronesia, federated states of': return <FM style={flagSize} />;
+      case 'faroe islands': return <FO style={flagSize} />;
+      case 'france': return <FR style={flagSize} />;
+      case 'gabon': return <GA style={flagSize} />;
+      case 'united kingdom': return <GB style={flagSize} />;
+      case 'grenada': return <GD style={flagSize} />;
+      case 'georgia': return <GE style={flagSize} />;
+      case 'french guiana': return <GF style={flagSize} />;
+      case 'guernsey': return <GG style={flagSize} />;
+      case 'ghana': return <GH style={flagSize} />;
+      case 'gibraltar': return <GI style={flagSize} />;
+      case 'greenland': return <GL style={flagSize} />;
+      case 'gambia': return <GM style={flagSize} />;
+      case 'guinea': return <GN style={flagSize} />;
+      case 'guadeloupe': return <GP style={flagSize} />;
+      case 'equatorial guinea': return <GQ style={flagSize} />;
+      case 'greece': return <GR style={flagSize} />;
+      case 'south georgia and the south sandwich islands': return <GS style={flagSize} />;
+      case 'guatemala': return <GT style={flagSize} />;
+      case 'guam': return <GU style={flagSize} />;
+      case 'guinea-bissau': return <GW style={flagSize} />;
+      case 'guyana': return <GY style={flagSize} />;
+      case 'hong kong': return <HK style={flagSize} />;
+      case 'heard island and mcdonald islands': return <HM style={flagSize} />;
+      case 'honduras': return <HN style={flagSize} />;
+      case 'croatia': return <HR style={flagSize} />;
+      case 'haiti': return <HT style={flagSize} />;
+      case 'hungary': return <HU style={flagSize} />;
+      case 'indonesia': return <ID style={flagSize} />;
+      case 'ireland': return <IE style={flagSize} />;
+      case 'israel': return <IL style={flagSize} />;
+      case 'isle of man': return <IM style={flagSize} />;
+      case 'india': return <IN style={flagSize} />;
+      case 'british indian ocean territory': return <IO style={flagSize} />;
+      case 'iraq': return <IQ style={flagSize} />;
+      case 'iran, islamic republic of iran': return <IR style={flagSize} />;
+      case 'iceland': return <IS style={flagSize} />;
+      case 'italy': return <IT style={flagSize} />;
+      case 'jersey': return <JE style={flagSize} />;
+      case 'jamaica': return <JM style={flagSize} />;
+      case 'jordan': return <JO style={flagSize} />;
+      case 'japan': return <JP style={flagSize} />;
+      case 'kenya': return <KE style={flagSize} />;
+      case 'kyrgyzstan': return <KG style={flagSize} />;
+      case 'cambodia': return <KH style={flagSize} />;
+      case 'kiribati': return <KI style={flagSize} />;
+      case 'comoros': return <KM style={flagSize} />;
+      case 'saint kitts and nevis': return <KN style={flagSize} />;
+      case 'korea, democratic people\'s republic of korea': return <KP style={flagSize} />;
+      case 'korea, republic of': return <KR style={flagSize} />;
+      case 'kuwait': return <KW style={flagSize} />;
+      case 'cayman islands': return <KY style={flagSize} />;
+      case 'kazakhstan': return <KZ style={flagSize} />;
+      case 'lao people\'s democratic republic': return <LA style={flagSize} />;
+      case 'lebanon': return <LB style={flagSize} />;
+      case 'saint lucia': return <LC style={flagSize} />;
+      case 'liechtenstein': return <LI style={flagSize} />;
+      case 'sri lanka': return <LK style={flagSize} />;
+      case 'liberia': return <LR style={flagSize} />;
+      case 'lesotho': return <LS style={flagSize} />;
+      case 'lithuania': return <LT style={flagSize} />;
+      case 'luxembourg': return <LU style={flagSize} />;
+      case 'latvia': return <LV style={flagSize} />;
+      case 'libya': return <LY style={flagSize} />;
+      case 'morocco': return <MA style={flagSize} />;
+      case 'monaco': return <MC style={flagSize} />;
+      case 'moldova, republic of': return <MD style={flagSize} />;
+      case 'montenegro': return <ME style={flagSize} />;
+      case 'saint martin (french part)': return <MF style={flagSize} />;
+      case 'madagascar': return <MG style={flagSize} />;
+      case 'marshall islands': return <MH style={flagSize} />;
+      case 'north macedonia': return <MK style={flagSize} />;
+      case 'mali': return <ML style={flagSize} />;
+      case 'myanmar': return <MM style={flagSize} />;
+      case 'mongolia': return <MN style={flagSize} />;
+      case 'macao': return <MO style={flagSize} />;
+      case 'northern mariana islands': return <MP style={flagSize} />;
+      case 'martinique': return <MQ style={flagSize} />;
+      case 'mauritania': return <MR style={flagSize} />;
+      case 'montserrat': return <MS style={flagSize} />;
+      case 'malta': return <MT style={flagSize} />;
+      case 'mauritius': return <MU style={flagSize} />;
+      case 'maldives': return <MV style={flagSize} />;
+      case 'malawi': return <MW style={flagSize} />;
+      case 'mexico': return <MX style={flagSize} />;
+      case 'malaysia': return <MY style={flagSize} />;
+      case 'mozambique': return <MZ style={flagSize} />;
+      case 'namibia': return <NA style={flagSize} />;
+      case 'new caledonia': return <NC style={flagSize} />;
+      case 'niger': return <NE style={flagSize} />;
+      case 'norfolk island': return <NF style={flagSize} />;
+      case 'nigeria': return <NG style={flagSize} />;
+      case 'nicaragua': return <NI style={flagSize} />;
+      case 'netherlands': return <NL style={flagSize} />;
+      case 'norway': return <NO style={flagSize} />;
+      case 'nepal': return <NP style={flagSize} />;
+      case 'nauru': return <NR style={flagSize} />;
+      case 'niue': return <NU style={flagSize} />;
+      case 'new zealand': return <NZ style={flagSize} />;
+      case 'oman': return <OM style={flagSize} />;
+      case 'panama': return <PA style={flagSize} />;
+      case 'peru': return <PE style={flagSize} />;
+      case 'french polynesia': return <PF style={flagSize} />;
+      case 'papua new guinea': return <PG style={flagSize} />;
+      case 'philippines': return <PH style={flagSize} />;
+      case 'pakistan': return <PK style={flagSize} />;
+      case 'poland': return <PL style={flagSize} />;
+      case 'saint pierre and miquelon': return <PM style={flagSize} />;
+      case 'pitcairn': return <PN style={flagSize} />;
+      case 'puerto rico': return <PR style={flagSize} />;
+      case 'palestine, state of': return <PS style={flagSize} />;
+      case 'portugal': return <PT style={flagSize} />;
+      case 'palau': return <PW style={flagSize} />;
+      case 'paraguay': return <PY style={flagSize} />;
+      case 'qatar': return <QA style={flagSize} />;
+      case 'réunion': return <RE style={flagSize} />;
+      case 'romania': return <RO style={flagSize} />;
+      case 'serbia': return <RS style={flagSize} />;
+      case 'russian federation': return <RU style={flagSize} />;
+      case 'rwanda': return <RW style={flagSize} />;
+      case 'saudi arabia': return <SA style={flagSize} />;
+      case 'solomon islands': return <SB style={flagSize} />;
+      case 'seychelles': return <SC style={flagSize} />;
+      case 'sudan': return <SD style={flagSize} />;
+      case 'sweden': return <SE style={flagSize} />;
+      case 'singapore': return <SG style={flagSize} />;
+      case 'saint helena, ascension and tristan da cunha': return <SH style={flagSize} />;
+      case 'slovenia': return <SI style={flagSize} />;
+      case 'svalbard and jan mayen': return <SJ style={flagSize} />;
+      case 'slovakia': return <SK style={flagSize} />;
+      case 'sierra leone': return <SL style={flagSize} />;
+      case 'san marino': return <SM style={flagSize} />;
+      case 'senegal': return <SN style={flagSize} />;
+      case 'somalia': return <SO style={flagSize} />;
+      case 'suriname': return <SR style={flagSize} />;
+      case 'south sudan': return <SS style={flagSize} />;
+      case 'sao tome and principe': return <ST style={flagSize} />;
+      case 'el salvador': return <SV style={flagSize} />;
+      case 'sint maarten (dutch part)': return <SX style={flagSize} />;
+      case 'syrian arab republic': return <SY style={flagSize} />;
+      case 'eswatini': return <SZ style={flagSize} />;
+      case 'turks and caicos islands': return <TC style={flagSize} />;
+      case 'chad': return <TD style={flagSize} />;
+      case 'french southern territories': return <TF style={flagSize} />;
+      case 'togo': return <TG style={flagSize} />;
+      case 'thailand': return <TH style={flagSize} />;
+      case 'tajikistan': return <TJ style={flagSize} />;
+      case 'tokelau': return <TK style={flagSize} />;
+      case 'timor-leste': return <TL style={flagSize} />;
+      case 'turkmenistan': return <TM style={flagSize} />;
+      case 'tunisia': return <TN style={flagSize} />;
+      case 'tonga': return <TO style={flagSize} />;
+      case 'turkey': return <TR style={flagSize} />;
+      case 'trinidad and tobago': return <TT style={flagSize} />;
+      case 'tuvalu': return <TV style={flagSize} />;
+      case 'taiwan, province of china': return <TW style={flagSize} />;
+      case 'tanzania, united republic of': return <TZ style={flagSize} />;
+      case 'ukraine': return <UA style={flagSize} />;
+      case 'uganda': return <UG style={flagSize} />;
+      case 'united states minor outlying islands': return <UM style={flagSize} />;
+      case 'united states': return <US style={flagSize} />;
+      case 'uruguay': return <UY style={flagSize} />;
+      case 'uzbekistan': return <UZ style={flagSize} />;
+      case 'holy see': return <VA style={flagSize} />;
+      case 'saint vincent and the grenadines': return <VC style={flagSize} />;
+      case 'venezuela, bolivarian republic of': return <VE style={flagSize} />;
+      case 'virgin islands, british': return <VG style={flagSize} />;
+      case 'virgin islands, u.s.': return <VI style={flagSize} />;
+      case 'viet nam': return <VN style={flagSize} />;
+      case 'vanuatu': return <VU style={flagSize} />;
+      case 'wallis and futuna': return <WF style={flagSize} />;
+      case 'samoa': return <WS style={flagSize} />;
+      case 'kosovo': return <XK style={flagSize} />;
+      case 'yemen': return <YE style={flagSize} />;
+      case 'mayotte': return <YT style={flagSize} />;
+      case 'south africa': return <ZA style={flagSize} />;
+      case 'zambia': return <ZM style={flagSize} />;
+      case 'zimbabwe': return <ZW style={flagSize} />;
+      default: return country.charAt(0); // Fallback to first letter
     }
   };
 
   // Use static images from data.json
   const getCityImageUrl = (cityData) => {
-    // First, check if the city has a custom imgUrl in the database
-    if (cityData.imgUrl) {
-      return cityData.imgUrl;
+    if (cityData.imageUrl) {
+      return cityData.imageUrl;
     }
-
     // Fallback to static images from data.json
-    const popularCity = data.popularCities.find(
-      item => item.name.toLowerCase() === cityData.city.toLowerCase()
-    );
-    return popularCity ? popularCity.image : `/images/top-cities/${cityData.city.toLowerCase()}.jpg`;
+     return '/images/city_fallback.webp';
   };
 
   // Optimized animation variants
@@ -209,9 +464,15 @@ const CitySelector = ({ onCitySelect }) => {
           )}
         </div>
 
-        {/* Fixed country selector visibility */}
+        {loading && (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        )}
+
+        {/* Country selector visibility */}
         <AnimatePresence>
-          {showCountrySelector && (
+          {showCountrySelector && !loading && (
             <motion.div
               key="country-selector"
               initial={{ opacity: 0, height: 0 }}
@@ -221,33 +482,37 @@ const CitySelector = ({ onCitySelect }) => {
               className="overflow-hidden bg-white"
               style={{ willChange: "opacity, height" }}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-2 pt-2 bg-white">
-                {countries.map((country, index) => (
-                  <div
-                    key={index}
-                    className={`p-2.5 rounded-md border ${selectedCountry === country
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white border-gray-200 hover:border-primary/50'
-                      } cursor-pointer transition-colors`}
-                    onClick={() => handleCountrySelect(country)}
-                  >
-                    <div className="flex items-center">
-                      <div className={`w-10 h-10 p-2 rounded-full flex items-center justify-center ${selectedCountry === country ? 'bg-white text-primary' : 'bg-primary/10 text-primary'
-                        }`}>
-                        <CountryFlag country={country} />
+              {countries.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-2 pt-2 bg-white">
+                  {countries.map((country, index) => (
+                    <div
+                      key={index}
+                      className={`p-2.5 rounded-md border ${selectedCountry === country
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-white border-gray-200 hover:border-primary/50'
+                        } cursor-pointer transition-colors`}
+                      onClick={() => handleCountrySelect(country)}
+                    >
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 p-2 rounded-full flex items-center justify-center ${selectedCountry === country ? 'bg-white text-primary' : 'bg-primary/10 text-primary'
+                          }`}>
+                          <CountryFlag country={country} />
+                        </div>
+                        <p className="ml-2 font-medium text-sm">{country}</p>
                       </div>
-                      <p className="ml-2 font-medium text-sm">{country}</p>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-4 text-gray-500">No countries available</p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       {/* City Selection Section */}
-      {selectedCountry && (
+      {selectedCountry && !loading && (
         <div className="bg-white rounded-lg shadow-sm p-4">
           {/* Show message when country has no data */}
           {!hasCountryData ? (

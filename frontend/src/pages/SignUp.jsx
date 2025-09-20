@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { collection, doc, addDoc, query, where, getDocs, setDoc } from "firebase/firestore";
 import { db } from '../firebase/config';
 import Button from '../components/Button';
 import InputField from '../components/InputField';
@@ -77,7 +77,7 @@ const SignUp = () => {
                 return;
             }
 
-            await addDoc(collection(db, "users"), userData);
+            await setDoc(doc(db, "users", userData.email), userData);
             toast.success('Account request submitted ! Your request will be approved within 24 hours.');
             navigate('/');
         } catch (error) {

@@ -1,13 +1,17 @@
 import { useState, useMemo } from 'react';
-import { Calendar, MapPin, DollarSign, ArrowDownAZ, ArrowUpAZ, Search, Users, RefreshCw } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, ArrowDownAZ, ArrowUpAZ, Search, Users, RefreshCw, CheckCircle, AlertTriangle, Clock, Ban, CreditCard } from 'lucide-react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../firebase/config';
+import { toast } from 'react-hot-toast';
 
-const BookingManagementTab = ({ bookings }) => {
+const BookingManagementTab = ({ bookings, onBookingsUpdate }) => {
   // State for sorting and filtering
   const [sortField, setSortField] = useState('createdAt');
   const [sortDirection, setSortDirection] = useState('desc');
   const [filterCity, setFilterCity] = useState('');
   const [filterCountry, setFilterCountry] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [updatingBooking, setUpdatingBooking] = useState(null);
 
   // Helper function to format package type
   const formatPackageType = (type) => {
@@ -32,6 +36,7 @@ const BookingManagementTab = ({ bookings }) => {
   const formatCurrency = (amount) => {
     return `$${Number(amount).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   };
+
   // Function to toggle sort direction
   const handleSortClick = (field) => {
     if (sortField === field) {
@@ -39,6 +44,38 @@ const BookingManagementTab = ({ bookings }) => {
     } else {
       setSortField(field);
       setSortDirection('asc');
+    }
+  };
+
+  // Update payment status
+  const updatePaymentStatus = async (bookingId, newStatus) => {
+    if (updatingBooking === bookingId) return;
+
+    try {
+      setUpdatingBooking(bookingId);
+      await updateDoc(doc(db, 'bookings', bookingId), {
+        paymentStatus: newStatus
+      });
+
+      // Update local state immediately for UI responsiveness
+      const updatedBookings = bookings.map(booking => {
+        if (booking.id === bookingId) {
+          return { ...booking, paymentStatus: newStatus };
+        }
+        return booking;
+      });
+
+      // If parent component provides an update function
+      if (typeof onBookingsUpdate === 'function') {
+        onBookingsUpdate(updatedBookings);
+      }
+
+      toast.success(`Payment status updated to ${newStatus.replace('_', ' ')}`);
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast.error('Failed to update payment status');
+    } finally {
+      setUpdatingBooking(null);
     }
   };
 
@@ -75,34 +112,21 @@ const BookingManagementTab = ({ bookings }) => {
       // Handle timestamps for date sorting
       if (sortField === 'createdAt' && a.createdAt && b.createdAt) {
         if (a.createdAt.toDate && b.createdAt.toDate) {
-          aValue = a.createdAt.toDate().getTime();
-          bValue = b.createdAt.toDate().getTime();
+          aValue = a.createdAt.toDate();
+          bValue = b.createdAt.toDate();
         } else {
-          // Fallback if not a Firestore timestamp
-          aValue = new Date(a.createdAt).getTime();
-          bValue = new Date(b.createdAt).getTime();
+          aValue = new Date(a.createdAt);
+          bValue = new Date(b.createdAt);
         }
       }
 
-      // Handle numeric fields
-      if (sortField === 'totalAmount' || sortField === 'travelers' || sortField === 'vehicles') {
-        aValue = Number(aValue) || 0;
-        bValue = Number(bValue) || 0;
-      }
+      if (aValue === bValue) return 0;
 
-      // Handle string fields
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        if (sortDirection === 'asc') {
-          return aValue.localeCompare(bValue);
-        }
-        return bValue.localeCompare(aValue);
-      }
-
-      // Default comparison
       if (sortDirection === 'asc') {
-        return aValue - bValue;
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
       }
-      return bValue - aValue;
     });
   }, [bookings, sortField, sortDirection, filterCity, filterCountry, searchQuery]);
 
@@ -113,6 +137,67 @@ const BookingManagementTab = ({ bookings }) => {
     return sortDirection === 'asc'
       ? <ArrowUpAZ size={14} className="ml-1 inline" />
       : <ArrowDownAZ size={14} className="ml-1 inline" />;
+  };
+
+  // Render payment status badge with appropriate styling
+  const renderPaymentStatus = (status) => {
+    switch (status) {
+      case 'paid':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 flex items-center gap-1">
+            <CheckCircle size={12} /> Paid
+          </span>
+        );
+      case 'marked_done':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600 flex items-center gap-1">
+            <CheckCircle size={12} /> Marked as Done
+          </span>
+        );
+      case 'marked_not_received':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 flex items-center gap-1">
+            <AlertTriangle size={12} /> Marked but Not Received
+          </span>
+        );
+      case 'under_review':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 flex items-center gap-1">
+            <Clock size={12} /> Under Review
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 flex items-center gap-1">
+            <Ban size={12} /> Unpaid
+          </span>
+        );
+    }
+  };
+
+  // Render payment status dropdown
+  const renderPaymentActions = (booking) => {
+    return (
+      <div className="relative inline-block text-left">
+        <select
+          value={booking.paymentStatus || 'unpaid'}
+          onChange={(e) => updatePaymentStatus(booking.id, e.target.value)}
+          disabled={updatingBooking === booking.id}
+          className="px-3 py-1.5 text-xs font-medium rounded-md bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+        >
+          <option value="unpaid">Unpaid</option>
+          <option value="marked_done">Marked as Done</option>
+          <option value="marked_not_received">Marked but Not Received</option>
+          <option value="under_review">Under Review</option>
+          <option value="paid">Paid</option>
+        </select>
+        {updatingBooking === booking.id && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary"></div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -249,8 +334,8 @@ const BookingManagementTab = ({ bookings }) => {
               <th className="px-4 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Special Req.</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Packages</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Total Amount</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Payment Method</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Payment Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Payment Actions</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Status</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Created At</th>
             </tr>
@@ -309,17 +394,11 @@ const BookingManagementTab = ({ bookings }) => {
                   <td className="px-4 py-3 whitespace-nowrap font-bold text-primary">
                     {formatCurrency(booking.totalAmount)}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">{booking.paymentMethod}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                      ${booking.paymentStatus === 'completed'
-                        ? 'bg-green-100 text-green-700'
-                        : booking.paymentStatus === 'pending'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                      {booking.paymentStatus}
-                    </span>
+                    {renderPaymentStatus(booking.paymentStatus)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {renderPaymentActions(booking)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold

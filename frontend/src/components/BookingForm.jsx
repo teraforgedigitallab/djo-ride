@@ -1,19 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Plane, Phone, Mail, Building, User, CheckCircle, Info, CreditCard, DollarSign, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from './Button';
 import PriceDisplay from './PriceDisplay';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import PhoneInput from 'react-phone-input-2';
+import { useNavigate } from 'react-router-dom';
+
 
 const razorPayImage = "https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg";
 
 const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPrice }) => {
-
+    
     const { currentUser } = useAuth();
+    const navigate = useNavigate();
 
     const defaultUserData = userData || {
         fullName: 'John Doe',
@@ -59,6 +62,12 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
     const [submitted, setSubmitted] = useState(false);
     const [bookingReference, setBookingReference] = useState('');
 
+    useEffect(() => {
+        if (submitted) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [submitted]);
+
     // Calculate total price
     const calculateTotalPrice = () => {
         return selectedPackages.reduce((total, pkg) => {
@@ -77,10 +86,33 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+
+        // Special handling for travelers and luggages to enforce limits
+        if (name === 'travelers') {
+            const numValue = parseInt(value);
+            if (isNaN(numValue)) {
+                setFormData(prev => ({ ...prev, [name]: '' }));
+            } else {
+                const limitedValue = Math.min(Math.max(1, numValue), totalTravelerCapacity);
+                setFormData(prev => ({ ...prev, [name]: limitedValue }));
+            }
+        }
+        else if (name === 'luggages') {
+            const numValue = parseInt(value);
+            if (isNaN(numValue)) {
+                setFormData(prev => ({ ...prev, [name]: '' }));
+            } else {
+                const limitedValue = Math.min(Math.max(1, numValue), totalLuggageCapacity);
+                setFormData(prev => ({ ...prev, [name]: limitedValue }));
+            }
+        }
+        // Normal handling for other fields
+        else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
     // Handle form submission
@@ -89,6 +121,7 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
         setSubmitting(true);
 
         try {
+
             // Prepare booking data
             const bookingData = {
                 // userId: currentUser?.uid || 'guest',.
@@ -131,8 +164,8 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
 
                 // Payment details
                 totalAmount: calculateTotalPrice(),
-                paymentMethod: formData.paymentMethod,
-                paymentStatus: 'pending',
+                paymentMethod: 'dashboard',
+                paymentStatus: 'unpaid',
 
                 // Booking status
                 status: 'confirmed',
@@ -142,52 +175,19 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                 updatedAt: serverTimestamp()
             };
 
-            // =================================================================
-            // PAYMENT GATEWAY INTEGRATION WOULD GO HERE
-            // =================================================================
-            // 1. Initialize payment gateway (Razorpay/Stripe/etc)
-            // 2. Create order/payment intent with booking amount
-            // 3. Open payment modal/redirect to payment page
-            // 4. Handle payment success/failure callbacks
-            // 5. Update payment status in booking data
-            //
-            // Example Razorpay Integration:
-            // const options = {
-            //   key: "YOUR_RAZORPAY_KEY",
-            //   amount: calculateTotalPrice() * 100, // amount in smallest currency unit
-            //   currency: "INR",
-            //   name: "DjoRide",
-            //   description: "Booking Payment",
-            //   handler: function(response) {
-            //     bookingData.paymentId = response.razorpay_payment_id;
-            //     bookingData.paymentStatus = 'completed';
-            //     completeBooking(bookingData);
-            //   }
-            // };
-            // const rzp = new window.Razorpay(options);
-            // rzp.open();
-            // =================================================================
 
-            // For now, assume payment success and complete booking
-            bookingData.paymentStatus = 'completed';
+            // Create a unique ID with email and date
+            const bookingDate = new Date().toISOString().split('T')[0];
+            const uniqueId = `${bookingData.userEmail} - ${bookingDate} - ${Date.now()}`;
 
-            // Add booking to Firestore
-            const docRef = await addDoc(collection(db, 'bookings'), bookingData);
-
-            // Generate booking reference
-            const bookingRef = docRef.id.slice(-6).toUpperCase();
+            // Use setDoc with the uniqueId
+            await setDoc(doc(db, 'bookings', uniqueId), bookingData);
+            const bookingRef = uniqueId.slice(-6).toUpperCase();
             setBookingReference(bookingRef);
-
-            console.log('Booking submitted:', {
-                bookingId: docRef.id,
-                bookingRef,
-                ...bookingData
-            });
 
             toast.success('Booking confirmed successfully!');
             setSubmitted(true);
         } catch (error) {
-            console.error("Error submitting booking:", error);
             toast.error('Failed to complete booking. Please try again.');
         } finally {
             setSubmitting(false);
@@ -250,9 +250,15 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                             <p className="text-2xl font-mono tracking-wide">{bookingReference || 'DJO' + Math.random().toString(36).substring(2, 6).toUpperCase()}</p>
                         </div>
 
-                        <Button onClick={onBack} size="lg">
-                            Return to Dashboard
-                        </Button>
+                        <div className="w-full mx-auto flex justify-center align-center gap-2">
+                            <Button onClick={() => navigate('/dashboard')} size="sm">
+                                Go to Dashboard
+                            </Button>
+                            <Button onClick={onBack} size="sm" variant='outline'>
+                                Home
+                            </Button>
+                        </div>
+
                     </div>
                 </motion.div>
             ) : (
@@ -731,20 +737,17 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                             </motion.div>
 
                             {/* Payment Method */}
-                            <motion.div
+                            {/* <motion.div
                                 className="mb-6 p-5 rounded-lg border border-gray-200 bg-white"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.6, duration: 0.4 }}
                             >
                                 <h3 className="font-bold text-primary mb-4 flex items-center">
                                     <DollarSign size={16} className="mr-2" />
                                     Payment Method
                                 </h3>
 
-                                <div className="space-y-4">
-                                    {/* Razorpay Option */}
-                                    <label className="flex cursor-pointer">
+                                <div className="space-y-4"> */}
+                            {/* Razorpay Option */}
+                            {/* <label className="flex cursor-pointer">
                                         <input
                                             type="radio"
                                             name="paymentMethod"
@@ -780,10 +783,10 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                                                 </div>
                                             </div>
                                         </div>
-                                    </label>
+                                    </label> */}
 
-                                    {/* Cash Option */}
-                                    <label className="flex cursor-pointer">
+                            {/* Cash Option */}
+                            {/* <label className="flex cursor-pointer">
                                         <input
                                             type="radio"
                                             name="paymentMethod"
@@ -808,6 +811,39 @@ const BookingForm = ({ userData, selectedPackages, onBack, selectedCity, totalPr
                                             </div>
                                         </div>
                                     </label>
+                                </div>
+                            </motion.div> */}
+
+                            {/* Payment Method */}
+                            <motion.div
+                                className="mb-6 p-5 rounded-lg border border-gray-200 bg-white"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6, duration: 0.4 }}
+                            >
+                                <h3 className="font-bold text-primary mb-4 flex items-center">
+                                    <DollarSign size={16} className="mr-2" />
+                                    Payment Method
+                                </h3>
+
+                                <div className="space-y-4">
+                                    {/* Credit to Dashboard Option */}
+                                    <div className="p-3 rounded-lg border border-primary bg-primary/5 flex items-start w-full">
+                                        <div className="flex-shrink-0 mt-1">
+                                            <CreditCard size={20} className="text-primary" />
+                                        </div>
+                                        <div className="ml-3 flex-grow">
+                                            <p className="font-medium">Credit to Dashboard</p>
+                                            <p className="text-sm text-gray-600 mb-2">
+                                                Amount will be credited to your dashboard. You can complete the payment later.
+                                            </p>
+                                            <input
+                                                type="hidden"
+                                                name="paymentMethod"
+                                                value="credit"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </motion.div>
 

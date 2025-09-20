@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, CarTaxiFront, LogIn, LogOut, Settings } from 'lucide-react';
+import { Menu, X, CarTaxiFront, LogIn, LogOut, Settings, CreditCard} from 'lucide-react';
 import Button from '../components/Button';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -182,13 +182,16 @@ const Navbar = () => {
                   </Link>
                 ) : (
                   // Non-admin: show company name only, no icon
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="px-3"
-                  >
-                    <span>{userData?.companyName || 'Company Name'}</span>
-                  </Button>
+                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                    <Button
+                      className="flex items-center justify-center gap-2 w-full"
+                      size='sm'
+                      variant="outline"
+                    >
+                      <CreditCard size={16} />
+                      My Dashboard
+                    </Button>
+                  </Link>
                 )}
 
                 {/* Logout Button */}
