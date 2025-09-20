@@ -12,6 +12,7 @@ import Footer from './Footer';
 import UserManagementTab from './Admin/UserManagementTab';
 import BookingManagementTab from './Admin/BookingManagementTab';
 import PricingManagementTab from './Admin/PricingManagementTab';
+import CityImageManagementTab from './Admin/CityImageManagementTab';
 import PasswordModal from './Admin/PasswordModal';
 
 export {
@@ -30,5 +31,6 @@ export {
   UserManagementTab,
   BookingManagementTab,
   PricingManagementTab,
+  CityImageManagementTab,
   PasswordModal
 };

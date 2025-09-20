@@ -12,6 +12,9 @@ import { toast } from 'react-hot-toast';
 const Login = () => {
     const navigate = useNavigate();
     const { login, resetPassword } = useAuth();
+    const rememberedEmail = localStorage.getItem('rememberMe') === 'true'
+        ? localStorage.getItem('rememberedEmail') || ''
+        : '';
 
     // Get the redirect path from location state or default to home
     const from = '/#how-it-works';
@@ -29,7 +32,7 @@ const Login = () => {
     } = useForm({
         mode: 'onBlur',
         defaultValues: {
-            email: '',
+            email: rememberedEmail,
             password: '',
             rememberMe: localStorage.getItem('rememberMe') === 'true' || false
         }
@@ -41,6 +44,11 @@ const Login = () => {
     const onSubmit = async (data) => {
         // Save rememberMe preference in localStorage
         localStorage.setItem('rememberMe', data.rememberMe);
+        if (data.rememberMe) {
+            localStorage.setItem('rememberedEmail', data.email);
+        } else {
+            localStorage.removeItem('rememberedEmail');
+        }
 
         const success = await login(data.email, data.password, data.rememberMe);
         if (success) {

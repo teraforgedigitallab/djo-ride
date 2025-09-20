@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
-import { Users, Car, DollarSign } from 'lucide-react';
+import { Users, Car, DollarSign, Image } from 'lucide-react';
 import { collection, getDocs, doc, updateDoc, query, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { toast } from 'react-hot-toast';
-import { UserManagementTab, BookingManagementTab, PricingManagementTab, PasswordModal } from '../sections';
+import { UserManagementTab, BookingManagementTab, PricingManagementTab, CityImageManagementTab, PasswordModal } from '../sections';
 import { useAuth } from '../contexts/AuthContext';
 
 // API endpoint for user approval
 const API_ENDPOINT = 'https://djo-ride-backend.vercel.app/api/approve-user.js';
-
 
 const Admin = () => {
     const [users, setUsers] = useState([]);
@@ -204,15 +203,16 @@ const Admin = () => {
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h1 className="text-3xl font-bold text-primary mb-2">Admin Dashboard</h1>
-                        <p className="text-gray-600">Manage users, bookings & pricing.</p>
+                        <p className="text-gray-600">Manage users, bookings, pricing & city images.</p>
                     </div>
                 </div>
 
                 <Tab.Group>
-                    <Tab.List className="flex p-1 space-x-2 bg-background rounded-xl mb-8">
+                    <Tab.List className="flex p-1 space-x-2 bg-background rounded-xl mb-8 overflow-x-auto">
+                        {/* User Management Tab */}
                         <Tab className={({ selected }) =>
-                            `w-full py-3 text-sm font-medium leading-5 rounded-lg transition-all duration-200 ease-in-out
-        ${selected
+                            `w-full py-3 text-sm font-medium leading-5 rounded-lg transition-all duration-200 ease-in-out whitespace-nowrap
+                            ${selected
                                 ? 'bg-primary text-white shadow-md'
                                 : 'text-primary hover:bg-secondary/20'}`
                         }>
@@ -221,9 +221,11 @@ const Admin = () => {
                                 <span>User Management</span>
                             </div>
                         </Tab>
+
+                        {/* Booking Management Tab */}
                         <Tab className={({ selected }) =>
-                            `w-full py-3 text-sm font-medium leading-5 rounded-lg transition-all duration-200 ease-in-out
-        ${selected
+                            `w-full py-3 text-sm font-medium leading-5 rounded-lg transition-all duration-200 ease-in-out whitespace-nowrap
+                            ${selected
                                 ? 'bg-primary text-white shadow-md'
                                 : 'text-primary hover:bg-secondary/20'}`
                         }>
@@ -232,10 +234,11 @@ const Admin = () => {
                                 <span>Booking Management</span>
                             </div>
                         </Tab>
-                        {/* Add new Pricing Management Tab */}
+
+                        {/* Pricing Management Tab */}
                         <Tab className={({ selected }) =>
-                            `w-full py-3 text-sm font-medium leading-5 rounded-lg transition-all duration-200 ease-in-out
-        ${selected
+                            `w-full py-3 text-sm font-medium leading-5 rounded-lg transition-all duration-200 ease-in-out whitespace-nowrap
+                            ${selected
                                 ? 'bg-primary text-white shadow-md'
                                 : 'text-primary hover:bg-secondary/20'}`
                         }>
@@ -244,10 +247,23 @@ const Admin = () => {
                                 <span>Pricing Management</span>
                             </div>
                         </Tab>
+
+                        {/* City Image Management Tab */}
+                        <Tab className={({ selected }) =>
+                            `w-full py-3 text-sm font-medium leading-5 rounded-lg transition-all duration-200 ease-in-out whitespace-nowrap
+                            ${selected
+                                ? 'bg-primary text-white shadow-md'
+                                : 'text-primary hover:bg-secondary/20'}`
+                        }>
+                            <div className="flex items-center justify-center space-x-2">
+                                <Image className="h-5 w-5" />
+                                <span>City Images</span>
+                            </div>
+                        </Tab>
                     </Tab.List>
 
                     <Tab.Panels className="mt-2">
-                        {/* User Management Tab */}
+                        {/* User Management Tab Panel */}
                         <Tab.Panel>
                             <UserManagementTab
                                 users={users}
@@ -256,14 +272,19 @@ const Admin = () => {
                             />
                         </Tab.Panel>
 
-                        {/* Booking Management Tab */}
+                        {/* Booking Management Tab Panel */}
                         <Tab.Panel>
                             <BookingManagementTab bookings={bookings} />
                         </Tab.Panel>
 
-                        {/* Add new Pricing Management Tab Panel */}
+                        {/* Pricing Management Tab Panel */}
                         <Tab.Panel>
                             <PricingManagementTab />
+                        </Tab.Panel>
+
+                        {/* City Image Management Tab Panel */}
+                        <Tab.Panel>
+                            <CityImageManagementTab />
                         </Tab.Panel>
                     </Tab.Panels>
                 </Tab.Group>
@@ -286,6 +307,4 @@ const Admin = () => {
     );
 };
 
-
 export default Admin;
-

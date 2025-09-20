@@ -12,10 +12,6 @@ const FAQ = () => {
       question: "How does the billing work?",
       answer: "Contact your Accounts Manager to get a customized billing option. Invoices can be delivered electronically or via traditional mail, and we support multiple payment methods including credit cards."
     },
-    // {
-    //   question: "Can we set different service levels for different employees?",
-    //   answer: "Yes, our platform allows you to define service tiers based on employee seniority or other criteria. You can customize vehicle types, waiting times, and additional services for each tier, ensuring appropriate service levels while maintaining cost control."
-    // },
     {
       question: "How do you handle flight delays?",
       answer: "Our system automatically tracks flight information and adjusts pickup times accordingly. Drivers receive real-time updates about flight status, ensuring they're always there when your employees land, regardless of delays or early arrivals. There are no additional charges for adjusted wait times due to flight changes."

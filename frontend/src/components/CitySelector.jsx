@@ -102,11 +102,11 @@ const CitySelector = ({ onCitySelect }) => {
     setShowCountrySelector(prev => !prev);
   };
 
-    // Function to get country flag component
+  // Function to get country flag component
   const CountryFlag = ({ country }) => {
     const flagSize = { width: '100%', height: '100%' };
-    
-    switch(country.toLowerCase()) {
+
+    switch (country.toLowerCase()) {
       case 'usa':
         return <US style={flagSize} />;
       case 'india':
@@ -125,11 +125,17 @@ const CitySelector = ({ onCitySelect }) => {
   };
 
   // Use static images from data.json
-  const getCityImageUrl = (city) => {
+  const getCityImageUrl = (cityData) => {
+    // First, check if the city has a custom imgUrl in the database
+    if (cityData.imgUrl) {
+      return cityData.imgUrl;
+    }
+
+    // Fallback to static images from data.json
     const popularCity = data.popularCities.find(
-      item => item.name.toLowerCase() === city.toLowerCase()
+      item => item.name.toLowerCase() === cityData.city.toLowerCase()
     );
-    return popularCity ? popularCity.image : `/images/top-cities/${city.toLowerCase()}.jpg`;
+    return popularCity ? popularCity.image : `/images/top-cities/${cityData.city.toLowerCase()}.jpg`;
   };
 
   // Optimized animation variants
@@ -327,10 +333,14 @@ const CitySelector = ({ onCitySelect }) => {
                           >
                             <div className="h-32 bg-gray-200 overflow-hidden">
                               <img
-                                src={getCityImageUrl(cityName)}
+                                src={getCityImageUrl(cityData)}
                                 alt={cityName}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "https://via.placeholder.com/400x200?text=Image+Not+Available";
+                                }}
                               />
                             </div>
                             <div className="p-3 bg-primary text-white text-center">

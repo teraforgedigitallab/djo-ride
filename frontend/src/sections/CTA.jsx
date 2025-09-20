@@ -1,14 +1,93 @@
 import { motion } from 'framer-motion';
 import { Calendar, ArrowRight, ChevronRight, Phone, Check, ChevronDown, Send } from 'lucide-react';
 import Button from '../components/Button';
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
+import { useState, useRef } from 'react';
+import { collection, doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 const CTA = () => {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    company: '',
+    query: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState('');
+  const [showMessage, setShowMessage] = useState(false);
+  const timeoutRef = useRef(null);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitMessage('');
+    setShowMessage(false);
+
+    try {
+      // Validate required fields
+      if (!formData.email || !formData.firstName || !formData.lastName) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      // Create document with email as ID
+      const docRef = doc(db, 'queries', formData.email);
+
+      // Add timestamp to the data
+      const dataToStore = {
+        ...formData,
+        timestamp: new Date().toISOString()
+      };
+
+      await setDoc(docRef, dataToStore);
+
+      setSubmitMessage('Query submitted successfully!');
+      setShowMessage(true);
+
+      // Hide message after 3 seconds
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setShowMessage(false);
+      }, 3000);
+
+      // Reset form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        company: '',
+        query: ''
+      });
+
+    } catch (error) {
+      console.error('Error submitting query:', error);
+      setSubmitMessage(error.message || 'Failed to submit query. Please try again.');
+      setShowMessage(true);
+
+      // Hide error after 3 seconds
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setShowMessage(false);
+      }, 3000);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section id="contact" className="py-10 relative overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary opacity-90"></div>
-      
+
       <div className="container mx-auto px-10 relative max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-4">
           <motion.div
@@ -79,16 +158,16 @@ const CTA = () => {
                 className="relative group"
               >
                 <Link to='/book'>
-                <button className="relative bg-gradient-to-r from-white to-white/90 hover:from-white hover:to-white text-primary py-3 px-6 rounded-lg shadow-xl shadow-primary/20 font-semibold flex items-center gap-2 transition-all duration-300 cursor-pointer w-full md:w-auto align-center justify-center">
-                  <Calendar size={18} />
-                  Book Now
-                  <motion.div
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.5, repeatDelay: 2 }}
-                  >
-                    <ArrowRight size={18} />
-                  </motion.div>
-                </button>
+                  <button className="relative bg-gradient-to-r from-white to-white/90 hover:from-white hover:to-white text-primary py-3 px-6 rounded-lg shadow-xl shadow-primary/20 font-semibold flex items-center gap-2 transition-all duration-300 cursor-pointer w-full md:w-auto align-center justify-center">
+                    <Calendar size={18} />
+                    Book Now
+                    <motion.div
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5, repeatDelay: 2 }}
+                    >
+                      <ArrowRight size={18} />
+                    </motion.div>
+                  </button>
                 </Link>
               </motion.div>
 
@@ -106,41 +185,68 @@ const CTA = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="lg:col-span-6 bg-white rounded-2xl p-8 shadow-2xl border border-white/80 relative overflow-hidden"
           >
-            <form id='cta-form' className="space-y-6 relative">
+            <form id='cta-form' className="space-y-6 relative" onSubmit={handleSubmit}>
               <h3 className="text-primary text-xl font-semibold mb-6 md:text-2xl">Have some Queries ?</h3>
+
+              {/* Animated message */}
+              <div
+                className={`transition-all duration-500 ${
+                  showMessage ? 'opacity-100 max-h-40 mb-2' : 'opacity-0 max-h-0 mb-0'
+                }`}
+                aria-live="polite"
+              >
+                {submitMessage && (
+                  <div className={`p-4 rounded-lg text-center font-medium ${
+                    submitMessage.includes('successfully')
+                      ? 'bg-green-100 text-green-800 border border-green-200'
+                      : 'bg-red-100 text-red-800 border border-red-200'
+                  }`}>
+                    {submitMessage}
+                  </div>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-gray-800 text-sm font-medium mb-2" htmlFor='firstName'>First Name</label>
+                  <label className="block text-gray-800 text-sm font-medium mb-2" htmlFor='firstName'>First Name *</label>
                   <input
                     type="text"
                     name='firstName'
                     id='firstName'
+                    value={formData.firstName}
+                    onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-300"
                     placeholder="Your first name"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-800 text-sm font-medium mb-2" htmlFor='lastName'>Last Name</label>
+                  <label className="block text-gray-800 text-sm font-medium mb-2" htmlFor='lastName'>Last Name *</label>
                   <input
                     type="text"
                     name='lastName'
                     id='lastName'
+                    value={formData.lastName}
+                    onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-300"
                     placeholder="Your last name"
+                    required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-gray-800 text-sm font-medium mb-2" htmlFor='email'>Company Email</label>
+                <label className="block text-gray-800 text-sm font-medium mb-2" htmlFor='email'>Company Email *</label>
                 <input
                   type="email"
                   name='email'
                   id='email'
+                  value={formData.email}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-300"
                   placeholder="name@company.com"
                   autoComplete='email'
+                  required
                 />
               </div>
 
@@ -150,6 +256,8 @@ const CTA = () => {
                   type="text"
                   name='company'
                   id='company'
+                  value={formData.company}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-300"
                   placeholder="Your company name"
                   autoComplete='organization'
@@ -158,27 +266,46 @@ const CTA = () => {
 
               <div>
                 <label className="block text-gray-800 text-sm font-medium mb-2" htmlFor='query'>Query</label>
-                <input
-                  type="text"
+                <textarea
                   name='query'
                   id='query'
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-300"
+                  value={formData.query}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-300 resize-vertical"
                   placeholder="Your query"
-                  autoComplete='query'
                 />
               </div>
 
               <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
                 className="relative mt-8"
               >
                 <Button
+                  type="submit"
                   variant="primary"
-                  className="relative w-full bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-3 font-semibold"
+                  disabled={isSubmitting}
+                  className={`relative w-full ${
+                    isSubmitting
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-primary hover:bg-primary/90'
+                  } text-white flex items-center justify-center gap-3 font-semibold`}
                 >
-                  Submit
-                  <Send size={18} />
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Submitting...
+                    </span>
+                  ) : (
+                    <>
+                      Submit
+                      <Send size={18} />
+                    </>
+                  )}
                 </Button>
               </motion.div>
             </form>
