@@ -140,8 +140,8 @@ const Admin = () => {
                 throw new Error('User email is required');
             }
 
-            if (!generatedPassword || generatedPassword.length < 6) {
-                throw new Error('Password must be at least 6 characters');
+            if (!generatedPassword || generatedPassword.length < 8) {
+                throw new Error('Password must be at least 8 characters');
             }
 
             // Call backend API to create Firebase Auth user

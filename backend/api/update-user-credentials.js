@@ -28,8 +28,8 @@ export default async (req, res) => {
       updateData.email = newEmail;
     }
     if (newPassword) {
-      if (newPassword.length < 6) {
-           return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+      if (newPassword.length < 8) {
+           return res.status(400).json({ error: 'Password must be at least 8 characters long' });
       }
       updateData.password = newPassword;
     }

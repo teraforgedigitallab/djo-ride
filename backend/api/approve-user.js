@@ -33,8 +33,8 @@ export default async function handler(req, res) {
       }
 
       // Validate password strength
-      if (password.length < 6) {
-         return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+      if (password.length < 8) {
+         return res.status(400).json({ error: 'Password must be at least 8 characters long' });
       }
 
       // Check if user already exists in Firebase Auth

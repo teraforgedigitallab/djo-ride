@@ -38,8 +38,8 @@ const UserCredentialsModal = ({ isOpen, onClose, userId, userEmail }) => {
       return;
     }
 
-    if (mode === "password" && newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (mode === "password" && newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
       return;
     }
 
